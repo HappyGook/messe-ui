@@ -12,8 +12,28 @@ function Stopwatch() {
         pause,
     } = useStopwatch({ autoStart: true, interval: 20 });
 
-    function handleClick(){
+
+    function formatTime({minutes, seconds, milliseconds}){
+        const pad = (num, size=2) => String(num).padStart(size, '0');
+        const ms = String(milliseconds).padStart(3, '0');
+        return `00:${pad(minutes)}:${pad(seconds)}.${ms}`
+    }
+
+    // Name und Zeit nach Backend schicken, wenn der Benutzer fertig ist
+    async function handleClick() {
         pause()
+        const time = formatTime({minutes, seconds, milliseconds})
+        try {
+            await fetch("/api/save", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({name: name, time:time})
+            })
+        } catch (e) {
+            console.log("[FRONTEND] Problem beim speichern: ", e)
+        }
         navigate("/leaderboard")
     }
 
