@@ -1,5 +1,6 @@
 import {useNavigate} from 'react-router-dom'
 import {useUser} from "./UserContext.jsx";
+import {useState} from "react";
 
 
 
@@ -7,19 +8,25 @@ import {useUser} from "./UserContext.jsx";
 export default function NameInput(){
 
     const {name, setName}=useUser()
+    const [error, setError] = useState(null);
     const navigate=useNavigate()
 
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        if(name && name.length<14){
+        let len=name.length;
+        if(len>13){
+            setError("Eingabe ist zu lang!")
+        }else if(!len){
+            setError("Eingabe ist leer!")
+        }else{
             navigate("/confirm")
-        } else{
-            alert("Engabe ist leer")
         }
+
     }
 
     const handleChange=(e)=>{
+        setError("")
         setName(e.target.value)
     }
 
@@ -31,6 +38,9 @@ export default function NameInput(){
                 <h2>Geben Sie ihr Nickname ein!</h2>
                 <p>
                     Maximal 13 Zeichen!
+                    <div>
+                        {error}
+                    </div>
                 </p>
                 <input
                     type="text"

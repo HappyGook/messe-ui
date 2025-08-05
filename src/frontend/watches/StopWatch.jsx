@@ -1,8 +1,10 @@
 import React from 'react';
 import { useStopwatch } from 'react-timer-hook';
-import "./StopWatch.css"
+import {useNavigate} from 'react-router-dom'
+import "./Watches.css"
 
 function Stopwatch() {
+    const navigate=useNavigate()
     const {
         milliseconds,
         seconds,
@@ -10,14 +12,18 @@ function Stopwatch() {
         pause,
     } = useStopwatch({ autoStart: true, interval: 20 });
 
+    function handleClick(){
+        pause()
+        navigate("/leaderboard")
+    }
 
     return (
         <div style={{textAlign: 'center'}}>
             <h1>Notruf dings machen!</h1>
-            <div className="stopwatch" style={{fontSize:'100px'}}>
+            <div className="watch" style={{fontSize:'100px'}}>
                 <span>{minutes}</span> : <span>{seconds}</span> : <span>{Math.round(milliseconds/10)}</span>
             </div>
-            <button onClick={pause}>Fertig!</button>
+            <button className="submit-button" onClick={handleClick}><span>(Buzzer) Fertig!</span></button>
         </div>
     );
 }
