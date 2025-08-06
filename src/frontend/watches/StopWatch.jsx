@@ -2,8 +2,11 @@ import React from 'react';
 import { useStopwatch } from 'react-timer-hook';
 import {useNavigate} from 'react-router-dom'
 import "./Watches.css"
+import { useUser } from "../UserContext.jsx";
+
 
 function Stopwatch() {
+    const { name } = useUser();
     const navigate=useNavigate()
     const {
         milliseconds,
@@ -21,21 +24,38 @@ function Stopwatch() {
 
     // Name und Zeit nach Backend schicken, wenn der Benutzer fertig ist
     async function handleClick() {
-        pause()
-        const time = formatTime({minutes, seconds, milliseconds})
+        pause();
+        const time = formatTime({minutes, seconds, milliseconds});
+
+        // Debug log
+        console.log('Sending data:', { name, time });
+
         try {
-            await fetch("/api/save", {
+            const response = await fetch("/api/save", {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({name: name, time:time})
-            })
+                body: JSON.stringify({ name: name, time: time })
+            });
+
+            // Debug log
+            console.log('Response status:', response.status);
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                console.error('Server error:', errorData);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('Save successful:', result);
+            navigate("/leaderboard");
         } catch (e) {
-            console.log("[FRONTEND] Problem beim speichern: ", e)
+            console.error("[FRONTEND] Problem beim speichern: ", e);
         }
-        navigate("/leaderboard")
     }
+
 
     return (
         <div style={{textAlign: 'center'}}>

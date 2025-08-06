@@ -38,10 +38,11 @@ export default function NameInput(){
                 <h2>Geben Sie ihr Nickname ein!</h2>
                 <p>
                     Maximal 13 Zeichen!
-                    <div>
-                        {error}
-                    </div>
+
                 </p>
+                <div>
+                    {error}
+                </div>
                 <input
                     type="text"
                     value={name}
