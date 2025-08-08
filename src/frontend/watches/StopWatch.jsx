@@ -61,7 +61,7 @@ function Stopwatch() {
         <div style={{textAlign: 'center'}}>
             <h1>Notruf dings machen!</h1>
             <div className="watch" style={{fontSize:'100px'}}>
-                <span>{minutes}</span> : <span>{seconds}</span> : <span>{Math.round(milliseconds/10)}</span>
+                <span>{minutes}</span> : <span>{seconds}</span> . <span>{Math.round(milliseconds/10)}</span>
             </div>
             <button className="submit-button" onClick={handleClick}><span>(Buzzer) Fertig!</span></button>
         </div>

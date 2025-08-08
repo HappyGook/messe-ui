@@ -1,0 +1,20 @@
+.leaderboard{
+    width: 100%;
+    height: 100%;
+    margin-bottom: 20px;
+}
+
+.leader-table{
+    width: 100%;
+}
+
+.leader{
+    padding: 10px;
+    font-size: 1.2em;
+}
+.top-leader{
+    background-color: #fdeb85;  /* gold color */
+    font-weight: bold;
+    font-size: 1.5em;
+
+}

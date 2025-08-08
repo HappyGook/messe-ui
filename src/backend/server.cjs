@@ -1,5 +1,4 @@
 const express = require('express')
-const path = require('path')
 const db = require('./db.cjs')
 
 const app = express();
@@ -19,18 +18,6 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (err) => {
     console.error('Unhandled Rejection:', err);
 });
-
-//Debugging
-app.use((req, res, next) => {
-    console.log('Received request:', {
-        method: req.method,
-        path: req.path,
-        body: req.body,
-        headers: req.headers
-    });
-    next();
-});
-
 
 // Neue Zeile in DB anlegen (user - Zeit)
 app.post('/api/save', (req, res) => {
@@ -63,7 +50,6 @@ app.post('/api/save', (req, res) => {
     });
 });
 
-
 // Leaderboard abrufen
 app.get('/api/leaderboard', (req, res) => {
     console.log('Leaderboard request received');
@@ -72,7 +58,7 @@ app.get('/api/leaderboard', (req, res) => {
         SELECT name, time
         FROM users
         ORDER BY time ASC
-        LIMIT 10
+        LIMIT 7
     `;
 
     db.all(query, [], (err, rows) => {
@@ -92,11 +78,6 @@ app.get('/api/leaderboard', (req, res) => {
         res.setHeader('Content-Type', 'application/json');
         res.json(rows);
     });
-});
-
-// Add a test endpoint
-app.get('/api/test', (req, res) => {
-    res.json({ message: 'API is working' });
 });
 
 app.use((err, req, res, next) => {
