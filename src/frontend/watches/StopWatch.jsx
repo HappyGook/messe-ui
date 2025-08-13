@@ -2,6 +2,7 @@ import React from 'react';
 import { useStopwatch } from 'react-timer-hook';
 import {useNavigate} from 'react-router-dom'
 import "./Watches.css"
+import "./../App.css"
 import { useUser } from "../UserContext.jsx";
 
 
