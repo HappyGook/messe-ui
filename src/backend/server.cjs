@@ -1,5 +1,7 @@
 const express = require('express')
 const db = require('./db.cjs')
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 app.use(express.json());
@@ -7,6 +9,26 @@ app.use(express.json());
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
+});
+
+
+
+// Раздаём статику только если папка существует
+const distPath = path.join(__dirname, 'dist');
+if (!fs.existsSync(distPath)) {
+    console.error('Dist folder not found at', distPath);
+} else {
+    app.use(express.static(distPath));
+}
+
+// Для SPA: все GET-запросы к несуществующим маршрутам — отдаем index.html
+app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'), (err) => {
+        if (err) {
+            console.error('Error sending index.html:', err);
+            res.status(500).send('Internal Server Error');
+        }
+    });
 });
 
 // Add error handler for uncaught exceptions
