@@ -9,7 +9,7 @@ function Confirm(){
     return(
         <div>
             <h2>Willst du mit dem Nickname {name} starten?</h2>
-            <button className="submit-button" onClick={()=>navigate("/countdown")}><span>(Buzzer) Starten!</span></button>
+            <button className="submit-button" onClick={()=>navigate("/stopwatch")}><span>(Buzzer) Starten!</span></button>
             <button className="edit-button" onClick={()=>navigate("/")}><span>Nickname Bearbeiten</span></button>
         </div>
     )

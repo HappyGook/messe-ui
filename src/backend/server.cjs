@@ -57,8 +57,7 @@ app.get('/api/leaderboard', (req, res) => {
     const query = `
         SELECT name, time
         FROM users
-        ORDER BY time ASC
-        LIMIT 7
+        ORDER BY time
     `;
 
     db.all(query, [], (err, rows) => {

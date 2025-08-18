@@ -7,7 +7,9 @@ function LeaderBoard() {
     const [leaders, setLeaders] = useState([]);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
-    const navigate=useNavigate()
+    const [showAll, setShowAll] = useState(false);
+    const navigate = useNavigate();
+    const initialDisplayCount = 7;
 
     useEffect(() => {
         fetchLeaders();
@@ -58,6 +60,8 @@ function LeaderBoard() {
     if (loading) return <div>Loading...</div>;
     if (error) return <div>Error: {error}</div>;
 
+    const displayedLeaders = showAll ? leaders : leaders.slice(0, initialDisplayCount);
+
     return (
         <div>
             <div className="leaderboard">
@@ -65,25 +69,45 @@ function LeaderBoard() {
                 {leaders.length === 0 ? (
                     <p>No records yet!</p>
                 ) : (
-                    <table className="leader-table">
-                        <thead>
-                        </thead>
-                        <tbody>
-                        {leaders.map((leader, index) => (
-                            <tr
-                                key={index}
-                                className={index === 0 ? 'top-leader' : 'leader'}
+                    <>
+                        <table className="leader-table">
+                            <thead>
+                            </thead>
+                            <tbody>
+                            {displayedLeaders.map((leader, index) => (
+                                <tr
+                                    key={index}
+                                    className={
+                                        {
+                                            0: "first-leader",
+                                            1: "second-leader",
+                                            2: "third-leader"
+                                        }[index] || "leader"
+                                    }
+                                >
+                                    <td>{index + 1}</td>
+                                    <td>{leader.name}</td>
+                                    <td>{leader.time.substring(3)}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                        {leaders.length > initialDisplayCount && (
+                            <button
+                                onClick={() => setShowAll(!showAll)}
                             >
-                                <td>{index + 1}</td>
-                                <td>{leader.name}</td>
-                                <td>{leader.time.substring(3)}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
+                                <span>
+                                    {showAll ? 'Top 7 zeigen' : 'Alle zeigen'}
+                                </span>
+                            </button>
+                        )}
+                    </>
+
                 )}
             </div>
-            <button className="submit-button" onClick={() => navigate("/")}> <span> Nochmal Spielen </span> </button>
+            <button className="submit-button" onClick={() => navigate("/")}>
+                <span> Nochmal Spielen </span>
+            </button>
         </div>
 
     );

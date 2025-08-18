@@ -12,9 +12,20 @@
     padding: 10px;
     font-size: 1.2em;
 }
-.top-leader{
-    background-color: #fdeb85;  /* gold color */
+.first-leader{
+    background-color: #fdeb85;
     font-weight: bold;
     font-size: 1.5em;
+}
 
+.second-leader{
+    background-color: #ececec;
+    font-weight: bold;
+    font-size: 1.3em;
+}
+
+.third-leader{
+    background-color: #f4973c;
+    font-weight: bold;
+    font-size: 1.1em;
 }
