@@ -79,6 +79,36 @@ app.get('/api/leaderboard', (req, res) => {
     });
 });
 
+app.post('/api/name',(req,res)=>{
+    const name = req.body.name
+    console.log('Name-check request received for name:', name);
+
+    const query = `
+        SELECT name
+        FROM users
+        WHERE name = ?
+    `;
+    db.get(query,[name],(err,row)=>{
+        if(err){
+            console.error("[BACKEND] Database error:", err);
+            return res.status(500).json({
+                error: "Database error",
+                details: err.message
+            });
+        }
+        if(!row){
+            console.log("[BACKEND] Name is free!");
+            res.json({success:true, message: "Verfügbar!"})
+        } else {
+            console.log("[BACKEND] Name ist bereits vergeben!");
+            res.status(400).json({
+                error: "Name ist bereits vergeben",
+                details: "Name ist bereits vergeben"
+            });
+        }
+    })
+})
+
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({

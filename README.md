@@ -23,7 +23,7 @@ If you are developing a production application, we recommend using TypeScript wi
 
 -[x] Kein countdown nach Buzzer
 
--[ ] gleiche nicknames sperren
+-[x] gleiche nicknames sperren
 
 -[x] zeit format (2 Stellen)
 

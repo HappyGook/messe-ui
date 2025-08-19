@@ -20,7 +20,28 @@ export default function NameInput(){
         }else if(!len){
             setError("Eingabe ist leer!")
         }else{
-            navigate("/confirm")
+            try{
+                fetch("/api/name", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({name: name})
+                }).then(response=>{
+                    if (response.ok) {
+                        navigate("/confirm");
+                    } else {
+                        return response.json().then(data => {
+                            setError(data.error || "Name ist bereits vergeben");
+                        });
+                    }
+                }).catch(err => {
+                    console.error("Problem beim Namen-Check", err);
+                    setError("Ein Fehler ist aufgetreten");
+                });
+            } catch (err) {
+                console.log("Problem beim Namen-Check",err)
+            }
         }
 
     }
