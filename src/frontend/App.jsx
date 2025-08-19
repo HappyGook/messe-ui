@@ -7,8 +7,9 @@ import NameInput from "./NameInput.jsx";
 import Confirm from "./Confirm.jsx";
 import StopWatch from "./watches/StopWatch.jsx";
 import CountDown from "./watches/CountDown.jsx";
-import LeaderBoard from "./LeaderBoard.jsx";
+import LeaderBoard from "./leaderboards/LeaderBoard.jsx";
 import {useEffect} from "react";
+import LeaderAll from "./leaderboards/LeaderAll.jsx";
 
 function App() {
     useEffect(() => {
@@ -35,6 +36,7 @@ function App() {
                   <Route path="/stopwatch" element={<StopWatch />}/>
                   <Route path="/countdown" element={<CountDown />}/>
                   <Route path="/leaderboard" element={<LeaderBoard />}/>
+                  <Route path="/leaderAll" element={<LeaderAll />}/>
               </Routes>
           </BrowserRouter>
       </UserProvider>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import './LeaderBoard.css';
-import './App.css'
+import '../App.css'
 import {useNavigate} from 'react-router-dom'
 
 function LeaderBoard() {
@@ -16,46 +16,46 @@ function LeaderBoard() {
     }, []);
 
     const fetchLeaders = async () => {
-    try {
-        console.log('Starting leaderboard fetch');
-        const response = await fetch('/api/leaderboard', {
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        
-        console.log('Response status:', response.status);
-        console.log('Response headers:', Object.fromEntries(response.headers));
-        
-        const responseText = await response.text();
-        console.log('Raw response:', responseText);
-        
-        if (!responseText) {
-            console.log('Empty response received');
-            setLeaders([]);
-            return;
-        }
-        
         try {
-            const data = JSON.parse(responseText);
-            console.log('Parsed data:', data);
-            
-            if (!response.ok) {
-                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            console.log('Starting leaderboard fetch');
+            const response = await fetch('/api/leaderAll', {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            console.log('Response status:', response.status);
+            console.log('Response headers:', Object.fromEntries(response.headers));
+
+            const responseText = await response.text();
+            console.log('Raw response:', responseText);
+
+            if (!responseText) {
+                console.log('Empty response received');
+                setLeaders([]);
+                return;
             }
-            
-            setLeaders(Array.isArray(data) ? data : []);
-        } catch (e) {
-            console.error('JSON parse error:', e);
-            setError('Invalid server response format');
+
+            try {
+                const data = JSON.parse(responseText);
+                console.log('Parsed data:', data);
+
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                }
+
+                setLeaders(Array.isArray(data) ? data : []);
+            } catch (e) {
+                console.error('JSON parse error:', e);
+                setError('Invalid server response format');
+            }
+        } catch (err) {
+            console.error('Fetch error:', err);
+            setError(`Failed to fetch leaderboard data: ${err.message}`);
+        } finally {
+            setLoading(false);
         }
-    } catch (err) {
-        console.error('Fetch error:', err);
-        setError(`Failed to fetch leaderboard data: ${err.message}`);
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
     if (loading) return <div>Loading...</div>;
     if (error) return <div>Error: {error}</div>;
@@ -65,7 +65,7 @@ function LeaderBoard() {
     return (
         <div>
             <div className="leaderboard">
-                <h2>Leaderboard</h2>
+                <h2>Vollständiges Leaderboard</h2>
                 {leaders.length === 0 ? (
                     <p>No records yet!</p>
                 ) : (
@@ -101,6 +101,12 @@ function LeaderBoard() {
                                 </span>
                             </button>
                         )}
+                        <div>
+                            <button onClick={()=>navigate("/leaderboard")}>
+                                <span> Leaderboard der letzten Stunde </span>
+                            </button>
+                        </div>
+
                     </>
 
                 )}
@@ -108,6 +114,7 @@ function LeaderBoard() {
             <button className="submit-button" onClick={() => navigate("/")}>
                 <span> Nochmal Spielen </span>
             </button>
+
         </div>
 
     );

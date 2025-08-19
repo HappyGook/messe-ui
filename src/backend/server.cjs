@@ -57,6 +57,7 @@ app.get('/api/leaderboard', (req, res) => {
     const query = `
         SELECT name, time
         FROM users
+        WHERE datetime(created_at) >= datetime('now', '-1 hour')
         ORDER BY time
     `;
 
@@ -78,6 +79,35 @@ app.get('/api/leaderboard', (req, res) => {
         res.json(rows);
     });
 });
+
+app.get('/api/leaderAll', (req, res) => {
+    console.log('Leaderboard request received');
+
+    const query = `
+        SELECT name, time
+        FROM users
+        ORDER BY time
+    `;
+
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            console.error("[BACKEND] Database error:", err);
+            return res.status(500).json({
+                error: "Database error",
+                details: err.message
+            });
+        }
+
+        console.log("[BACKEND] Sending leaderboard data:", rows);
+
+        // Make sure we're sending a valid JSON response
+        if (!rows) rows = [];
+
+        res.setHeader('Content-Type', 'application/json');
+        res.json(rows);
+    });
+});
+
 
 app.post('/api/name',(req,res)=>{
     const name = req.body.name

@@ -1,30 +1,27 @@
-# React + Vite
+# TODOs und Features
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-
-# TODOs
-
--[x] volle leaderboard (alle leute)
+-[x] Möglichkeit, den Leaderboard zu erweitern
+  - Der "Alle zeigen" Button auf der Leaderboard Seite
+  - Dafür müssen in DB mehr als 7 Scores sein
 
 -[ ] Konfetti Animation
 
--[ ] Noch ein Column in DB (jetzt aktiv/nicht)
+-[x] Leaderboard der letzten Stunde
+   - Jetzt werden an dieser Seite alle Benutzer gezeigt, die innerhalb 60 Minuten ab dem Moment des Abrufs gespielt haben
+   - Das betrifft fast immer 2 Stunden, z.B. beim Abruf um 11:05 werden die Scores im Zeitraum 10:05 - 11:05 angezeigt
+   - So sieht's nach meiner Meinung besser aus
 
 -[ ] Admin seite (reset)
 
 -[x] Kein countdown nach Buzzer
+  - Entfernt
+  - Kann die Countdown Seite woanders einstecken ..?
 
 -[x] gleiche nicknames sperren
+  - Jetzt werden die streng gesperrt, wie das letzte Mal vereinbart
+  - Kann ändern, wenn nötig
 
--[x] zeit format (2 Stellen)
+-[x] Zeitformatierung
+  - Wurde gemacht, auf der Stoppuhr Seite sichtbar
 
 
