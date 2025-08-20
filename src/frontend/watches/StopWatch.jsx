@@ -1,14 +1,31 @@
-import React from 'react';
 import { useStopwatch } from 'react-timer-hook';
 import {useNavigate} from 'react-router-dom'
 import "./Watches.css"
 import "./../App.css"
 import { useUser } from "../UserContext.jsx";
+import useSound from 'use-sound';
+import victorySound from '../sounds/victory.mp3';
+import tickingSound from '../sounds/ticking.mp3';
+import {useEffect} from "react";
+import { showConfetti } from './Confetti.jsx';
+
+
 
 
 function Stopwatch() {
     const { name } = useUser();
     const navigate=useNavigate()
+    const [playVictory] = useSound(victorySound);
+    const [playTicking, { stop: stopTicking }] = useSound(tickingSound, {
+        interrupt: true,
+        loop: true,
+    });
+
+    useEffect(() => {
+        playTicking();
+        return () => stopTicking();
+    }, [playTicking, stopTicking]);
+
     const {
         milliseconds,
         seconds,
@@ -17,19 +34,22 @@ function Stopwatch() {
     } = useStopwatch({ autoStart: true, interval: 20 });
 
 
+
     function formatTime({minutes, seconds, milliseconds}){
         const pad = (num, size=2) => String(num).padStart(size, '0');
         const ms = String(milliseconds).padStart(3, '0');
         return `00:${pad(minutes)}:${pad(seconds)}.${ms}`
     }
 
+
     // Name und Zeit nach Backend schicken, wenn der Benutzer fertig ist
     async function handleClick() {
         pause();
-        const time = formatTime({minutes, seconds, milliseconds});
+        stopTicking();
+        playVictory();
+        showConfetti();
 
-        // Debug log
-        console.log('Sending data:', { name, time });
+        const time = formatTime({minutes, seconds, milliseconds});
 
         try {
             const response = await fetch("/api/save", {
@@ -40,9 +60,6 @@ function Stopwatch() {
                 body: JSON.stringify({ name: name, time: time })
             });
 
-            // Debug log
-            console.log('Response status:', response.status);
-
             if (!response.ok) {
                 const errorData = await response.text();
                 console.error('Server error:', errorData);
@@ -51,7 +68,11 @@ function Stopwatch() {
 
             const result = await response.json();
             console.log('Save successful:', result);
-            navigate("/leaderboard");
+
+            setTimeout(() => {
+                navigate("/leaderboard");
+            }, 3000);
+
         } catch (e) {
             console.error("[FRONTEND] Problem beim speichern: ", e);
         }

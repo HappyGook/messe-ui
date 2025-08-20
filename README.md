@@ -4,7 +4,9 @@
   - Der "Alle zeigen" Button auf der Leaderboard Seite
   - Dafür müssen in DB mehr als 7 Scores sein
 
--[ ] Konfetti Animation
+-[x] Konfetti Animation + Audio
+  - Konfetti wird angezeigt
+  - Audio-Effekte für Stoppuhr und nach dem Fertig-Click hinzugefügt
 
 -[x] Leaderboard der letzten Stunde
    - Jetzt werden an dieser Seite alle Benutzer gezeigt, die innerhalb 60 Minuten ab dem Moment des Abrufs gespielt haben
