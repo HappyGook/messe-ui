@@ -50,7 +50,7 @@ app.post('/api/save', (req, res) => {
     });
 });
 
-// Leaderboard abrufen
+// Leaderboards abrufen
 app.get('/api/leaderboard', (req, res) => {
     console.log('Leaderboard request received');
     
@@ -108,7 +108,7 @@ app.get('/api/leaderAll', (req, res) => {
     });
 });
 
-
+// Name check
 app.post('/api/name',(req,res)=>{
     const name = req.body.name
     console.log('Name-check request received for name:', name);
@@ -138,6 +138,159 @@ app.post('/api/name',(req,res)=>{
         }
     })
 })
+
+// Adminseite requests
+
+// Reihen löschen
+app.post('/api/delete', (req, res) => {
+    console.log('[BACKEND] Received delete request body:', req.body);
+
+    const ids = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+        console.log('[BACKEND] Invalid request: ids array is required');
+        return res.status(400).json({
+            error: 'Array of IDs is required',
+            received: ids
+        });
+    }
+
+    const placeholders = ids.map(() => '?').join(',');
+    const query = `DELETE FROM users WHERE id IN (${placeholders})`;
+
+    db.run(query, ids, function(err) {
+        if (err) {
+            console.error("[BACKEND] Database error:", err);
+            return res.status(500).json({
+                error: 'Failed to delete from database',
+                details: err.message
+            });
+        }
+        console.log(`[BACKEND] Successfully deleted ${this.changes} rows`);
+        res.json({
+            message: `Successfully deleted ${this.changes} rows`
+        });
+    });
+});
+
+// Reihen - Bearbeitung
+app.post('/api/modify', (req, res) => {
+    console.log('[BACKEND] Received modify request body:', req.body);
+
+    if (!Array.isArray(req.body) || req.body.length === 0) {
+        console.log('[BACKEND] Invalid request: array of rows is required');
+        return res.status(400).json({
+            error: 'Array of rows is required',
+            received: req.body
+        });
+    }
+
+    const updates = req.body.map(row => {
+        return new Promise((resolve, reject) => {
+            if (!row.id || !row.name || !row.time) {
+                reject(new Error('Each row must contain id, name, and time'));
+                return;
+            }
+
+            const query = `UPDATE users SET name = ?, time = ? WHERE id = ?`;
+            db.run(query, [row.name, row.time, row.id], function(err) {
+                if (err) reject(err);
+                else resolve(this.changes);
+            });
+        });
+    });
+
+    Promise.all(updates)
+        .then(results => {
+            const totalUpdated = results.reduce((sum, curr) => sum + curr, 0);
+            console.log(`[BACKEND] Successfully modified ${totalUpdated} rows`);
+            res.json({
+                message: `Successfully modified ${totalUpdated} rows`
+            });
+        })
+        .catch(err => {
+            console.error("[BACKEND] Database error:", err);
+            res.status(500).json({
+                error: 'Failed to modify database entries',
+                details: err.message
+            });
+        });
+});
+
+//Reihen hinzufügen
+app.post('/api/add', (req, res) => {
+    console.log('[BACKEND] Received add request body:', req.body);
+
+    if (!Array.isArray(req.body) || req.body.length === 0) {
+        console.log('[BACKEND] Invalid request: array of rows is required');
+        return res.status(400).json({
+            error: 'Array of rows is required',
+            received: req.body
+        });
+    }
+
+    const insertions = req.body.map(row => {
+        return new Promise((resolve, reject) => {
+            if (!row.name || !row.time) {
+                reject(new Error('Each row must contain name and time'));
+                return;
+            }
+
+            const query = `INSERT INTO users (name, time, created_at) VALUES (?, ?, datetime('now'))`;
+            db.run(query, [row.name, row.time], function(err) {
+                if (err) reject(err);
+                else resolve(this.lastID);
+            });
+        });
+    });
+
+    Promise.all(insertions)
+        .then(ids => {
+            console.log(`[BACKEND] Successfully added ${ids.length} rows`);
+            res.status(201).json({
+                message: `Successfully added ${ids.length} rows`,
+                insertedIds: ids
+            });
+        })
+        .catch(err => {
+            console.error("[BACKEND] Database error:", err);
+            res.status(500).json({
+                error: 'Failed to add database entries',
+                details: err.message
+            });
+        });
+});
+
+// Tabelle abrufen
+app.get('/api/getall', (req, res) => {
+    console.log('[BACKEND] Full table data request received');
+
+    const query = `
+        SELECT id, name, time, created_at
+        FROM users
+        ORDER BY id
+    `;
+
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            console.error("[BACKEND] Database error:", err);
+            return res.status(500).json({
+                error: "Database error",
+                details: err.message
+            });
+        }
+
+        console.log("[BACKEND] Sending full table data:", rows);
+
+        // Make sure valid JSON response
+        if (!rows) rows = [];
+
+        res.setHeader('Content-Type', 'application/json');
+        res.json(rows);
+    });
+});
+
+
+
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
