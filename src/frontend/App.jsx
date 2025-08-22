@@ -8,16 +8,10 @@ import Confirm from "./Confirm.jsx";
 import StopWatch from "./watches/StopWatch.jsx";
 import CountDown from "./watches/CountDown.jsx";
 import LeaderBoard from "./leaderboards/LeaderBoard.jsx";
-import {useEffect} from "react";
 import LeaderAll from "./leaderboards/LeaderAll.jsx";
+import Admin from "./Admin.jsx";
 
 function App() {
-    useEffect(() => {
-        fetch('/api/test')
-            .then(res => res.json())
-            .then(data => console.log('API test response:', data))
-            .catch(err => console.error('API test failed:', err));
-    }, []);
 
     return (
     <>
@@ -37,6 +31,7 @@ function App() {
                   <Route path="/countdown" element={<CountDown />}/>
                   <Route path="/leaderboard" element={<LeaderBoard />}/>
                   <Route path="/leaderAll" element={<LeaderAll />}/>
+                  <Route path="/admin" element={<Admin />}/>
               </Routes>
           </BrowserRouter>
       </UserProvider>
