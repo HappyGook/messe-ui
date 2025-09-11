@@ -37,27 +37,17 @@ nfc_state = NFCState()
 # Function to continuously read NFC tags
 def read_nfc():
     print("NFC Reader started. Waiting for tags...")
-    while True:
-        try:
-            # get id and text from tag
-            nfc_id, text = reader.read()
-
-            # print tag id and text
-            nfc_state.update(nfc_id, text)
-
-            print("\nTag detected!")
-            print(f"ID: {nfc_id}")
-            print(f"Text: {text}")
-            print("\nWaiting for next tag...")
-
-            # Small delay to prevent excessive CPU usage
-            time.sleep(0.5)
-
-        except KeyboardInterrupt:
-            break
-        except Exception as e:
-            print(f"Error reading NFC: {e}")
-            time.sleep(1)
+    try:
+        while True:
+            # Read only UIDs (auth surpass)
+            id = reader.read_id_no_block()
+            if id:
+                print(f"Tag detected! UID: {id}")
+                time.sleep(1)  
+    
+    except KeyboardInterrupt:
+        GPIO.cleanup()
+        print("\nReader stopped.")
 
 hostName = "localhost"
 serverPort = 8080
