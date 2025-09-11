@@ -1,6 +1,6 @@
 const express = require('express')
 const db = require('./db.cjs')
-const rc522 = require("rc522-rfid");
+const mfrc522 = require("mfrc522-rpi");
 
 const app = express();
 app.use(express.json());
@@ -22,23 +22,47 @@ process.on('unhandledRejection', (err) => {
 
 let lastNfcRead = { id: null, time: null };
 
-rc522({
-    reset: 25,
-    cs: 8  // NSS pin
-}, (rfidSerialNumber) => {
-    console.log("[NFC DEBUG] Callback triggered, received:", rfidSerialNumber);
-    try {
-        if (!rfidSerialNumber) {
-            console.log("[NFC] No card detected this tick");
-            return;
-        }
+// Initialize the MFRC522 with WiringPi
+try {
+    mfrc522.initWiringPi(0);
+    console.log("[NFC] MFRC522 initialized successfully");
+} catch (err) {
+    console.error("[NFC] Failed to initialize MFRC522:", err);
+}
 
-        lastNfcRead = { id: rfidSerialNumber, time: new Date().toISOString() };
-        console.log("[NFC] Card detected:", lastNfcRead);
+// Function to poll for NFC cards
+function pollForCards() {
+    try {
+        // Reset the reader
+        mfrc522.reset();
+
+        // Look for a card
+        let response = mfrc522.findCard();
+        if (!response.status) {
+            console.log("[NFC DEBUG] Card detected, getting UID...");
+
+            // Get the UID of the card
+            response = mfrc522.getUid();
+            if (!response.status) {
+                // Convert the UID array to a hex string
+                const uid = response.data.map(byte => byte.toString(16).padStart(2, '0')).join('');
+                lastNfcRead = { id: uid.toUpperCase(), time: new Date().toISOString() };
+                console.log("[NFC] Card detected:", lastNfcRead);
+            } else {
+                console.log("[NFC DEBUG] Failed to get UID");
+            }
+        }
     } catch (err) {
         console.error("[NFC] Error reading card:", err);
     }
-});
+
+    // Poll every 300ms (adjust as needed)
+    setTimeout(pollForCards, 300);
+}
+
+// Start polling for NFC cards
+console.log("[NFC] Starting NFC polling...");
+pollForCards();
 
 // API endpoint to get last NFC tag
 app.get('/api/nfc', (req, res) => {
