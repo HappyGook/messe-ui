@@ -22,8 +22,17 @@ process.on('unhandledRejection', (err) => {
 });
 
 let lastNfcRead = { id: null, time: null };
+const softSPI = new SoftSPI({
+    clock: 11,
+    mosi: 10,
+    miso: 9,
+    client: 8
+})
 
-rc522((rfidSerialNumber) => {
+rc522({
+    spi: softSPI,
+    reset: 25
+}, (rfidSerialNumber) => {
     try {
         if (!rfidSerialNumber) {
             console.log("[NFC] No card detected this tick");
