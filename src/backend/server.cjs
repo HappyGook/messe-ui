@@ -24,13 +24,37 @@ process.on('unhandledRejection', (err) => {
 let lastNfcRead = { id: null, time: null };
 
 rc522((rfidSerialNumber) => {
-    lastRead = { id: rfidSerialNumber, time: new Date().toISOString() };
-    console.log("Card detected:", lastRead);
+    try {
+        if (!rfidSerialNumber) {
+            console.log("[NFC] No card detected this tick");
+            return;
+        }
+
+        lastNfcRead = { id: rfidSerialNumber, time: new Date().toISOString() };
+        console.log("[NFC] Card detected:", lastNfcRead);
+    } catch (err) {
+        console.error("[NFC] Error reading card:", err);
+    }
 });
 
 // API endpoint to get last NFC tag
 app.get('/api/nfc', (req, res) => {
-    res.json(lastNfcRead);
+    console.log("[BACKEND] /api/nfc requested");
+
+    if (!lastNfcRead.id) {
+        console.log("[BACKEND] No NFC tag has been read yet");
+        return res.json({
+            success: false,
+            message: "No NFC tag detected yet",
+            lastNfcRead
+        });
+    }
+
+    console.log("[BACKEND] Returning last NFC tag:", lastNfcRead);
+    res.json({
+        success: true,
+        data: lastNfcRead
+    });
 });
 
 // Neue Zeile in DB anlegen (user - Zeit)
