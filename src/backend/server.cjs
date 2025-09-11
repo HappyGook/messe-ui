@@ -1,5 +1,7 @@
 const express = require('express')
 const db = require('./db.cjs')
+const Mfrc522 = require("mfrc522-rpi");
+const SoftSPI = require("rpi-softspi");
 
 const app = express();
 app.use(express.json());
@@ -17,6 +19,39 @@ process.on('uncaughtException', (err) => {
 // Add error handler for unhandled rejections
 process.on('unhandledRejection', (err) => {
     console.error('Unhandled Rejection:', err);
+});
+
+// Setup NFC reader
+const mfrc522 = new Mfrc522(new SoftSPI({
+    clock: 23, // GPIO pin
+    mosi: 19,  // GPIO pin
+    miso: 21,  // GPIO pin
+    client: 24 // GPIO pin
+}));
+
+let lastNfcRead = { id: null, time: null };
+
+// Poll NFC reader every 500ms
+setInterval(() => {
+    try {
+        mfrc522.reset();
+        let response = mfrc522.findCard();
+        if (!response.status) return;
+
+        response = mfrc522.getUid();
+        if (!response.status) return;
+
+        const uid = response.data.reduce((a, b) => a + b.toString(16), "");
+        lastNfcRead = { id: uid, time: new Date().toISOString() };
+        console.log("NFC Tag detected:", lastNfcRead);
+    } catch (e) {
+        console.error("NFC read error:", e);
+    }
+}, 500);
+
+// API endpoint to get last NFC tag
+app.get('/api/nfc', (req, res) => {
+    res.json(lastNfcRead);
 });
 
 // Neue Zeile in DB anlegen (user - Zeit)
