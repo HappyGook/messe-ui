@@ -49,7 +49,7 @@ def read_nfc():
         GPIO.cleanup()
         print("\nReader stopped.")
 
-hostName = "localhost"
+hostName = "0.0.0.0"
 serverPort = 8080
 
 class MyServer(BaseHTTPRequestHandler):
