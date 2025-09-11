@@ -1,7 +1,6 @@
 const express = require('express')
 const db = require('./db.cjs')
 const rc522 = require("rc522-rfid");
-const SoftSPI = require("rpi-softspi");
 
 const app = express();
 app.use(express.json());
@@ -22,17 +21,12 @@ process.on('unhandledRejection', (err) => {
 });
 
 let lastNfcRead = { id: null, time: null };
-const softSPI = new SoftSPI({
-    clock: 11,
-    mosi: 10,
-    miso: 9,
-    client: 8
-})
 
 rc522({
-    spi: softSPI,
-    reset: 25
+    reset: 25,
+    cs: 8  // NSS pin
 }, (rfidSerialNumber) => {
+    console.log("[NFC DEBUG] Callback triggered, received:", rfidSerialNumber);
     try {
         if (!rfidSerialNumber) {
             console.log("[NFC] No card detected this tick");
