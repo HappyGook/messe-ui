@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
-from nfc_reader import nfc_state
+from nfc_reader import nfc_state, logger
 from db import db
 
 app = FastAPI()
@@ -30,11 +30,12 @@ class UserModify(BaseModel):
 
 @app.get("/api/nfc")
 async def get_nfc():
-    last_read=nfc_state.get_reading()
+    last_read = nfc_state.get_reading()
+    logger.debug(f"NFC endpoint called, returning: {last_read}")
     if not last_read["id"]:
         return {
             "success": False,
-            "message": "No tag detected yet"
+            "message": "No NFC tag detected yet"
         }
     return {
         "success": True,
