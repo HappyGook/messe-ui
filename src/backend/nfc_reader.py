@@ -28,11 +28,12 @@ class NFCState:
 
     def update(self, nfc_id):
         with self.lock:
+            nfc_id=str(nfc_id)
             self.last_read = {
-                "id": str(nfc_id),  # Convert to string to ensure JSON serialization
+                "id": nfc_id,
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
             }
-            logger.info(f"NFC card detected - ID: {nfc_id}")
+            logger.debug(f"Raw NFC card detected - ID: {nfc_id}")
 
     def get_reading(self):
         with self.lock:

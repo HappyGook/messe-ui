@@ -1,3 +1,5 @@
+import time
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -16,6 +18,39 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# list of nfc tags
+CORRECT_ID = "584186924480"  # I chose this one as the "correct" ID
+KNOWN_IDS = [
+    "119591732478",
+    "584186924480",
+    "584182731423",
+    "584192212898",
+    "584183803890",
+    "584184705952",
+    "584183784382",
+    "584185919748",
+    "584195346115",
+    "584184827296",
+    "584195321184"
+]
+
+def check_nfc_id(nfc_id):
+    if not nfc_id:
+        return None
+
+    # Convert to string to ensure consistent comparison
+    nfc_id = str(nfc_id)
+
+    if nfc_id == CORRECT_ID:
+        print(f"[NFC] CORRECT ID detected: {nfc_id}")
+        return "correct"
+    elif nfc_id in KNOWN_IDS:
+        print(f"[NFC] WRONG ID detected: {nfc_id}")
+        return "wrong"
+    else:
+        print(f"[NFC] UNKNOWN ID detected: {nfc_id}")
+        return "unknown"
+
 class UserSave(BaseModel):
     name: str
     time: str
@@ -28,20 +63,35 @@ class UserModify(BaseModel):
     name: str
     time: str
 
-@app.get("/api/nfc")
-async def get_nfc():
-    last_read = nfc_state.get_reading()
-    logger.debug(f"NFC endpoint called, returning: {last_read}")
-    if not last_read["id"]:
-        return {
-            "success": False,
-            "message": "No NFC tag detected yet"
-        }
-    return {
-        "success": True,
-        "data": last_read
-    }
+# start-up event starts NFC reading
+@app.on_event("startup")
+async def startup_event():
+    # Start NFC reader in a separate thread
+    import threading
+    from nfc_reader import read_nfc
 
+    def nfc_processor():
+        last_processed_id = None
+        while True:
+            current_read = nfc_state.get_reading()
+            current_id = current_read.get("id")
+
+            # Only process if we have a new ID
+            if current_id and current_id != last_processed_id:
+                check_nfc_id(current_id)
+                last_processed_id = current_id
+
+            time.sleep(0.1)  # Small delay to prevent CPU overuse
+
+    # Start both NFC reader and processor threads
+    nfc_thread = threading.Thread(target=read_nfc, daemon=True)
+    processor_thread = threading.Thread(target=nfc_processor, daemon=True)
+
+    nfc_thread.start()
+    processor_thread.start()
+
+
+# API endpoints
 @app.post("/api/save")
 async def save_user(user: UserSave):
     with db.get_connection() as conn:
