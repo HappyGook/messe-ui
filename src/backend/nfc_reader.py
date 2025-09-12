@@ -3,7 +3,7 @@
 import logging
 
 import gpiozero
-from joyit-mfrc522 import SimpleMFRC522
+from joyit_mfrc522 import SimpleMFRC522
 import time
 import threading
 
