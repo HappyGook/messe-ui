@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import logging
+import os
+
 from mfrc522 import MFRC522
 import time
 import threading
@@ -25,11 +27,44 @@ READER_CONFIGS = {
     "reader5": {"cs": 18}   # Fifth reader
 }
 
+def check_spi_setup():
+    """Check if SPI is properly configured"""
+    available_spi = []
+    for i in range(2):  # Check spidev0.0 and spidev0.1
+        if os.path.exists(f'/dev/spidev0.{i}'):
+            available_spi.append(f'spidev0.{i}')
+
+    if not available_spi:
+        logger.error("No SPI devices found. Please enable SPI using 'sudo raspi-config'")
+        return False
+
+    logger.info(f"Available SPI devices: {available_spi}")
+    return True
+
+
 class NFCReader:
     def __init__(self, reader_name: str, cs_pin: int):
         self.reader_name = reader_name
-        self.reader = MFRC522(bus=0, device=cs_pin)
-        logger.info(f"Initialized {reader_name} with CS pin {cs_pin}")
+        logger.info(f"Attempting to initialize {reader_name} on CS pin {cs_pin}")
+        try:
+            logger.debug(f"Opening SPI bus 0 with device {cs_pin}")
+            self.reader = MFRC522(bus=0, device=cs_pin)
+            logger.debug("MFRC522 instance created")
+
+            # Test if reader is responding
+            (status, _) = self.reader.MFRC522_Request(self.reader.PICC_REQIDL)
+            logger.debug(f"Initial request status: {status}")
+
+            logger.info(f"Successfully initialized {reader_name} with CS pin {cs_pin}")
+        except FileNotFoundError as e:
+            logger.error(f"SPI device not found for {reader_name} (CS pin {cs_pin})")
+            logger.error(f"Available devices in /dev/: {os.listdir('/dev/')}")
+            raise
+        except Exception as e:
+            logger.error(f"Error initializing reader {reader_name}: {str(e)}")
+            logger.error(f"Error type: {type(e)}")
+            raise
+
 
     def read_id(self) -> str | None:
         """Read card ID from the reader."""
