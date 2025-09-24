@@ -43,6 +43,7 @@ def check_nfc_id(nfc_id):
 
     if nfc_id == CORRECT_ID:
         print(f"[NFC] CORRECT ID detected: {nfc_id}")
+        # here will be some project-relevant code
         return "correct"
     elif nfc_id in KNOWN_IDS:
         print(f"[NFC] WRONG ID detected: {nfc_id}")
