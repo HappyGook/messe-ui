@@ -29,7 +29,7 @@ class NFCReader:
         self.cs_pin = cs_pin
         try:
             # Initialize RFID instance with given CE and RST
-            self.rdr = RFID(pin_ce=cs_pin, pin_rst=rst_pin)
+            self.rdr = RFID(pin_ce=cs_pin, pin_rst=rst_pin, pin_irq=-1)
             logger.info(f"Initialized {name} on CS pin GPIO{cs_pin}")
         except Exception as e:
             logger.error(f"Failed to init {name} on CS GPIO{cs_pin}: {e}")
