@@ -11,17 +11,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# GPIO assignments for CE (CS) pins
-# Each module’s SDA/SS pin connects to one of these GPIOs
+# Use BOARD numbering (physical pins)
 READER_CONFIGS = {
-    "reader1": {"cs": 24},  # GPIO24
-    "reader2": {"cs": 12},  # GPIO12
-    "reader3": {"cs": 8},   # GPIO8
-    "reader4": {"cs": 23},  # GPIO23
-    "reader5": {"cs": 18},  # GPIO18
+    "reader1": {"cs": 18},  # GPIO24 → physical pin 18
+    "reader2": {"cs": 32},  # GPIO12 → physical pin 32
+    "reader3": {"cs": 24},  # GPIO8  → physical pin 24
+    "reader4": {"cs": 16},  # GPIO23 → physical pin 16
+    "reader5": {"cs": 12},  # GPIO18 → physical pin 12
 }
 
-RST_PIN=9
+# Shared reset pin (BOARD numbering)
+RST_PIN = 21  # GPIO9 → physical pin 21
 
 class NFCReader:
     def __init__(self, name: str, cs_pin: int, rst_pin: int = RST_PIN):
