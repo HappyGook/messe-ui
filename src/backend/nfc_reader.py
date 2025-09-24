@@ -7,6 +7,7 @@ import time
 import threading
 from gpiozero import Device
 from gpiozero.pins.native import NativeFactory
+import RPi.GPIO as GPIO
 
 # Set up logging
 logging.basicConfig(
@@ -77,53 +78,52 @@ def check_spi_kernel_module():
         logger.error(f"Error checking kernel modules: {str(e)}")
         return False
 
-
 class NFCReader:
     def __init__(self, reader_name: str, cs_pin: int):
         self.reader_name = reader_name
+        self.cs_pin = cs_pin
         logger.info(f"Attempting to initialize {reader_name} on CS pin {cs_pin}")
         try:
+            # Setup GPIO first
+            GPIO.setwarnings(False)
+            GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering
+            GPIO.setup(cs_pin, GPIO.OUT)
+            GPIO.output(cs_pin, GPIO.HIGH)  # Deactivate the device initially
+
             # Initialize SPI
             self.spi = spidev.SpiDev()
-            self.spi.open(0, 0)  # Bus 0, Device 0
+            self.spi.open(0, 0)  # Always use bus 0, device 0
             self.spi.max_speed_hz = 1000000
             self.spi.mode = 0
+            self.spi.bits_per_word = 8
+            logger.info(f"SPI initialized for {reader_name}")
 
-            # Create MFRC522 instance with the configured SPI
-            self.reader = MFRC522(bus=0, device=cs_pin)
+            # Create MFRC522 instance
+            self.reader = MFRC522(device=0, bus=0, pin_ce=cs_pin)
 
-            # Test communication
-            version = self.reader.Read_MFRC522(self.reader.VersionReg)
-            logger.info(f"{reader_name} Version register: 0x{version:02x}")
+            # Test if we can communicate with the reader
+            try:
+                version = self.reader.Read_MFRC522(self.reader.VersionReg)
+                logger.info(f"{reader_name} Version register: 0x{version:02x}")
+
+                # Additional test - try to read command register
+                command = self.reader.Read_MFRC522(self.reader.CommandReg)
+                logger.info(f"{reader_name} Command register: 0x{command:02x}")
+
+            except Exception as reg_e:
+                logger.error(f"Failed to read registers: {str(reg_e)}")
+                raise
 
         except Exception as e:
             logger.error(f"Error initializing reader on CS pin {cs_pin}")
             logger.error(f"Error details: {str(e)}")
             logger.error(f"Error type: {type(e)}")
             raise
-
-
-
-    def read_id(self) -> str | None:
-        """Read card ID from the reader."""
-        try:
-            (status, TagType) = self.reader.MFRC522_Request(self.reader.PICC_REQIDL)
-
-            if status == self.reader.MI_OK:
-                (status, uid) = self.reader.MFRC522_Anticoll()
-                if status == self.reader.MI_OK:
-                    # Convert UID bytes to string
-                    card_id = ''.join(format(x, '02x') for x in uid)
-                    return card_id
-            return None
-        except Exception as e:
-            logger.error(f"Error reading from {self.reader_name}: {str(e)}")
-            return None
-
     def close(self):
         """Clean up resources used by the reader."""
         try:
-            self.reader.Close_MFRC522()
+            self.spi.close()
+            GPIO.cleanup(self.cs_pin)
         except Exception as e:
             logger.error(f"Error closing reader {self.reader_name}: {str(e)}")
 
@@ -203,7 +203,39 @@ def test_reader(reader: NFCReader) -> bool:
         logger.error(f"Test failed on {reader.reader_name}: {str(e)}")
         return False
 
+def test_spi_communication(cs_pin):
+    """Test basic SPI communication with a device."""
+    try:
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(cs_pin, GPIO.OUT)
+        GPIO.output(cs_pin, GPIO.HIGH)
+
+        spi = spidev.SpiDev()
+        spi.open(0, 0)
+        spi.max_speed_hz = 1000000
+        spi.mode = 0
+
+        # Pull CS pin low to select device
+        GPIO.output(cs_pin, GPIO.LOW)
+
+        # Try to read MFRC522 version register (0x37)
+        resp = spi.xfer2([0x37 << 1 | 0x80, 0x00])
+
+        GPIO.output(cs_pin, GPIO.HIGH)
+        spi.close()
+
+        logger.info(f"SPI test response from pin {cs_pin}: {resp}")
+        return resp[1]  # Second byte contains the actual data
+
+    except Exception as e:
+        logger.error(f"SPI test failed on pin {cs_pin}: {str(e)}")
+        return None
+
+
 def main():
+    print("Testing spi communication...")
+    test_spi_communication(8)
+
     # Create NFCState instance
     nfc_state = NFCState()
 
