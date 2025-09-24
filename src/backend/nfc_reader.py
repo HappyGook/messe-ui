@@ -29,17 +29,32 @@ READER_CONFIGS = {
 
 def check_spi_setup():
     """Check if SPI is properly configured"""
+    import spidev
     available_spi = []
-    for i in range(2):  # Check spidev0.0 and spidev0.1
+
+    # Check spidev devices
+    for i in range(2):
         if os.path.exists(f'/dev/spidev0.{i}'):
             available_spi.append(f'spidev0.{i}')
 
-    if not available_spi:
-        logger.error("No SPI devices found. Please enable SPI using 'sudo raspi-config'")
-        return False
-
     logger.info(f"Available SPI devices: {available_spi}")
-    return True
+
+    # Test SPI communication
+    spi = spidev.SpiDev()
+    try:
+        # Try specifically with CS pin 8 (reader3)
+        spi.open(0, 0)  # Bus 0, Device 0
+        spi.max_speed_hz = 1000000  # 1MHz
+        spi.mode = 0
+        logger.info("SPI configuration:")
+        logger.info(f"Max Speed: {spi.max_speed_hz}")
+        logger.info(f"Mode: {spi.mode}")
+        logger.info(f"Bits per word: {spi.bits_per_word}")
+        spi.close()
+    except Exception as e:
+        logger.error(f"SPI test failed: {str(e)}")
+        return False
+    return bool(available_spi)
 
 
 class NFCReader:
@@ -47,21 +62,32 @@ class NFCReader:
         self.reader_name = reader_name
         logger.info(f"Attempting to initialize {reader_name} on CS pin {cs_pin}")
         try:
-            logger.debug(f"Opening SPI bus 0 with device {cs_pin}")
+            # Try to open SPI device explicitly first
+            import spidev
+            spi = spidev.SpiDev()
+            try:
+                spi.open(0, 0)  # Try bus 0, device 0
+                logger.info(f"Successfully opened SPI bus 0, device 0")
+                spi.close()
+            except Exception as spi_e:
+                logger.error(f"SPI test failed: {str(spi_e)}")
+
+            logger.debug(f"Creating MFRC522 instance with bus=0, device={cs_pin}")
             self.reader = MFRC522(bus=0, device=cs_pin)
-            logger.debug("MFRC522 instance created")
+
+            # Test specific registers to verify communication
+            logger.debug("Testing MFRC522 communication...")
+            version = self.reader.Read_MFRC522(self.reader.VersionReg)
+            logger.info(f"MFRC522 Version: 0x{version:02x}")
 
             # Test if reader is responding
-            (status, _) = self.reader.MFRC522_Request(self.reader.PICC_REQIDL)
-            logger.debug(f"Initial request status: {status}")
+            logger.debug("Testing card detection...")
+            (status, TagType) = self.reader.MFRC522_Request(self.reader.PICC_REQIDL)
+            logger.info(f"Initial request status: {status}")
 
-            logger.info(f"Successfully initialized {reader_name} with CS pin {cs_pin}")
-        except FileNotFoundError as e:
-            logger.error(f"SPI device not found for {reader_name} (CS pin {cs_pin})")
-            logger.error(f"Available devices in /dev/: {os.listdir('/dev/')}")
-            raise
         except Exception as e:
-            logger.error(f"Error initializing reader {reader_name}: {str(e)}")
+            logger.error(f"Error initializing reader on CS pin {cs_pin}")
+            logger.error(f"Error details: {str(e)}")
             logger.error(f"Error type: {type(e)}")
             raise
 
