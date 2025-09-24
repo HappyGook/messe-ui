@@ -5,16 +5,6 @@ import threading
 from pirc522 import RFID
 import RPi.GPIO as GPIO
 
-
-
-# clean up existing GPIO settings
-GPIO.cleanup()
-
-# Set up GPIO mode at the start
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
-
-
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
