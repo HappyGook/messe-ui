@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import logging
 import os
-
+import spidev
 from mfrc522 import MFRC522
 import time
 import threading
@@ -83,15 +83,14 @@ class NFCReader:
         self.reader_name = reader_name
         logger.info(f"Attempting to initialize {reader_name} on CS pin {cs_pin}")
         try:
-            # Configure SPI explicitly
-            spi = spidev.SpiDev()
-            spi.open(0, 0)  # Use bus 0, device 0
-            spi.max_speed_hz = 1000000  # 1MHz
-            spi.mode = 0
-            spi.bits_per_word = 8
+            # Initialize SPI
+            self.spi = spidev.SpiDev()
+            self.spi.open(0, 0)  # Bus 0, Device 0
+            self.spi.max_speed_hz = 1000000
+            self.spi.mode = 0
 
-            # Create MFRC522 instance with explicit SPI device
-            self.reader = MFRC522(spi=spi, pin_rst=22, pin_ce=cs_pin)  # Adjust reset pin if needed
+            # Create MFRC522 instance with the configured SPI
+            self.reader = MFRC522(bus=0, device=cs_pin)
 
             # Test communication
             version = self.reader.Read_MFRC522(self.reader.VersionReg)
