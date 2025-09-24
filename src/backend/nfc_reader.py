@@ -7,8 +7,13 @@ import RPi.GPIO as GPIO
 
 
 
-GPIO.setwarnings(False)
+# clean up existing GPIO settings
+GPIO.cleanup()
+
+# Set up GPIO mode at the start
 GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+
 
 # Set up logging
 logging.basicConfig(
@@ -17,13 +22,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Use BOARD numbering (physical pins)
 READER_CONFIGS = {
-    "reader1": {"cs": 24},  # GPIO24
-    "reader2": {"cs": 12},  # GPIO12
+   # "reader1": {"cs": 24},  # GPIO24
+   # "reader2": {"cs": 12},  # GPIO12
     "reader3": {"cs": 8},   # GPIO8
-    "reader4": {"cs": 23},  # GPIO23
-    "reader5": {"cs": 18},  # GPIO18
+   # "reader4": {"cs": 23},  # GPIO23
+   # "reader5": {"cs": 18},  # GPIO18
 }
 
 # Shared reset pin (BCM numbering)
