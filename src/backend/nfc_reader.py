@@ -1,6 +1,6 @@
 import logging
 import gpiozero
-from joyit_mfrc522 import SimpleMFRC522
+from joyit_mfrc522 import MFRC522
 import time
 import threading
 
@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 
 # Initialize multiple readers
 readers = {
-    "reader1": SimpleMFRC522(pin_ce=24),  # First reader
-    "reader2": SimpleMFRC522(pin_ce=12),  # Second reader
-    "reader3": SimpleMFRC522(pin_ce=8), # Third reader
-    "reader4": SimpleMFRC522(pin_ce=23), # Fourth reader
-    "reader5": SimpleMFRC522(pin_ce=18)  # Fifth reader
+    "reader1": MFRC522(pin_ce=24),  # First reader
+    "reader2": MFRC522(pin_ce=12),  # Second reader
+    "reader3": MFRC522(pin_ce=8), # Third reader
+    "reader4": MFRC522(pin_ce=23), # Fourth reader
+    "reader5": MFRC522(pin_ce=18)  # Fifth reader
 }
 
 class NFCState:
