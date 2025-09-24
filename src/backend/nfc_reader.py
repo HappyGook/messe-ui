@@ -32,29 +32,50 @@ def check_spi_setup():
     import spidev
     available_spi = []
 
-    # Check spidev devices
+    # List all devices in /dev
+    logger.info(f"All devices in /dev: {[f for f in os.listdir('/dev') if 'spi' in f]}")
+
+    # Check specific SPI devices
     for i in range(2):
-        if os.path.exists(f'/dev/spidev0.{i}'):
+        device_path = f'/dev/spidev0.{i}'
+        if os.path.exists(device_path):
+            # Check permissions
+            stats = os.stat(device_path)
+            logger.info(f"SPI device {device_path} exists with permissions: {oct(stats.st_mode)}")
             available_spi.append(f'spidev0.{i}')
 
-    logger.info(f"Available SPI devices: {available_spi}")
-
-    # Test SPI communication
-    spi = spidev.SpiDev()
-    try:
-        # Try specifically with CS pin 8 (reader3)
-        spi.open(0, 0)  # Bus 0, Device 0
-        spi.max_speed_hz = 1000000  # 1MHz
-        spi.mode = 0
-        logger.info("SPI configuration:")
-        logger.info(f"Max Speed: {spi.max_speed_hz}")
-        logger.info(f"Mode: {spi.mode}")
-        logger.info(f"Bits per word: {spi.bits_per_word}")
-        spi.close()
-    except Exception as e:
-        logger.error(f"SPI test failed: {str(e)}")
+    if not available_spi:
+        logger.error("No SPI devices found")
         return False
+
+    # Try to open each available SPI device
+    spi = spidev.SpiDev()
+    for device_num in range(len(available_spi)):
+        try:
+            spi.open(0, device_num)
+            logger.info(f"Successfully opened SPI bus 0, device {device_num}")
+            spi.max_speed_hz = 1000000
+            spi.mode = 0
+            logger.info(f"Device {device_num} config: speed={spi.max_speed_hz}, mode={spi.mode}")
+            spi.close()
+        except Exception as e:
+            logger.error(f"Failed to open SPI device {device_num}: {str(e)}")
+
     return bool(available_spi)
+
+def check_spi_kernel_module():
+    """Check if SPI kernel module is loaded"""
+    try:
+        with open('/proc/modules', 'r') as f:
+            modules = f.read()
+        logger.info("Loaded kernel modules related to SPI:")
+        for line in modules.split('\n'):
+            if 'spi' in line.lower():
+                logger.info(line)
+        return 'spi_bcm2835' in modules
+    except Exception as e:
+        logger.error(f"Error checking kernel modules: {str(e)}")
+        return False
 
 
 class NFCReader:
@@ -62,34 +83,26 @@ class NFCReader:
         self.reader_name = reader_name
         logger.info(f"Attempting to initialize {reader_name} on CS pin {cs_pin}")
         try:
-            # Try to open SPI device explicitly first
-            import spidev
+            # Configure SPI explicitly
             spi = spidev.SpiDev()
-            try:
-                spi.open(0, 0)  # Try bus 0, device 0
-                logger.info(f"Successfully opened SPI bus 0, device 0")
-                spi.close()
-            except Exception as spi_e:
-                logger.error(f"SPI test failed: {str(spi_e)}")
+            spi.open(0, 0)  # Use bus 0, device 0
+            spi.max_speed_hz = 1000000  # 1MHz
+            spi.mode = 0
+            spi.bits_per_word = 8
 
-            logger.debug(f"Creating MFRC522 instance with bus=0, device={cs_pin}")
-            self.reader = MFRC522(bus=0, device=cs_pin)
+            # Create MFRC522 instance with explicit SPI device
+            self.reader = MFRC522(spi=spi, pin_rst=22, pin_ce=cs_pin)  # Adjust reset pin if needed
 
-            # Test specific registers to verify communication
-            logger.debug("Testing MFRC522 communication...")
+            # Test communication
             version = self.reader.Read_MFRC522(self.reader.VersionReg)
-            logger.info(f"MFRC522 Version: 0x{version:02x}")
-
-            # Test if reader is responding
-            logger.debug("Testing card detection...")
-            (status, TagType) = self.reader.MFRC522_Request(self.reader.PICC_REQIDL)
-            logger.info(f"Initial request status: {status}")
+            logger.info(f"{reader_name} Version register: 0x{version:02x}")
 
         except Exception as e:
             logger.error(f"Error initializing reader on CS pin {cs_pin}")
             logger.error(f"Error details: {str(e)}")
             logger.error(f"Error type: {type(e)}")
             raise
+
 
 
     def read_id(self) -> str | None:
@@ -194,6 +207,11 @@ def test_reader(reader: NFCReader) -> bool:
 def main():
     # Create NFCState instance
     nfc_state = NFCState()
+
+    print("Checking SPI kernel module...")
+    check_spi_kernel_module()
+    print("Checking SPI setup...")
+    check_spi_setup()
 
     # Test all readers first
     working_readers = {name: reader for name, reader in readers.items()
