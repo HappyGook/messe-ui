@@ -3,6 +3,12 @@ import logging
 import time
 import threading
 from pirc522 import RFID
+import RPi.GPIO as GPIO
+
+
+
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BCM)
 
 # Set up logging
 logging.basicConfig(
@@ -13,15 +19,21 @@ logger = logging.getLogger(__name__)
 
 # Use BOARD numbering (physical pins)
 READER_CONFIGS = {
-    "reader1": {"cs": 18},  # GPIO24 → physical pin 18
-    "reader2": {"cs": 32},  # GPIO12 → physical pin 32
-    "reader3": {"cs": 24},  # GPIO8  → physical pin 24
-    "reader4": {"cs": 16},  # GPIO23 → physical pin 16
-    "reader5": {"cs": 12},  # GPIO18 → physical pin 12
+    "reader1": {"cs": 24},  # GPIO24
+    "reader2": {"cs": 12},  # GPIO12
+    "reader3": {"cs": 8},   # GPIO8
+    "reader4": {"cs": 23},  # GPIO23
+    "reader5": {"cs": 18},  # GPIO18
 }
 
-# Shared reset pin (BOARD numbering)
-RST_PIN = 21  # GPIO9 → physical pin 21
+# Shared reset pin (BCM numbering)
+RST_PIN = 25  # GPIO25
+try:
+    import spidev
+    spi = spidev.SpiDev()
+except Exception as e:
+    logger.error(f"Failed to initialize SPI. Is SPI enabled? Error: {e}")
+    exit(1)
 
 class NFCReader:
     def __init__(self, name: str, cs_pin: int, rst_pin: int = RST_PIN):
