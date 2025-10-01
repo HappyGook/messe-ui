@@ -1,10 +1,11 @@
+import threading
 import time
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
-from nfc_reader import nfc_state, logger
+from nfc_reader import nfc_state, read_nfc
 from db import db
 
 app = FastAPI()
@@ -17,6 +18,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# In-memory status tracking
+statuses = {
+    "local": None,
+    "sat1": None,
+    "sat2": None,
+    "sat3": None,
+    "sat4": None
+}
 
 # list of nfc tags
 CORRECT_ID = "584186924480"  # I chose this one as the "correct" ID
@@ -43,7 +54,6 @@ def check_nfc_id(nfc_id):
 
     if nfc_id == CORRECT_ID:
         print(f"[NFC] CORRECT ID detected: {nfc_id}")
-        # here will be some project-relevant code
         return "correct"
     elif nfc_id in KNOWN_IDS:
         print(f"[NFC] WRONG ID detected: {nfc_id}")
@@ -51,6 +61,13 @@ def check_nfc_id(nfc_id):
     else:
         print(f"[NFC] UNKNOWN ID detected: {nfc_id}")
         return "unknown"
+
+def check_all_correct():
+    """Check if all 5 readers have status 'correct'."""
+    if all(status == "correct" for status in statuses.values()):
+        print("[HUB] ALL 5 READERS CORRECT! Triggering logic...")
+        # Placeholder for further logic
+        # e.g., start process, open gate, etc.
 
 class UserSave(BaseModel):
     name: str
@@ -64,32 +81,42 @@ class UserModify(BaseModel):
     name: str
     time: str
 
+# -----------------------
+# Endpoint for satellites
+# -----------------------
+class RemoteNFC(BaseModel):
+    satellite: str  # e.g., 'sat1'
+    id: str
+    status: str     # 'correct', 'wrong', 'unknown'
+
+@app.post("/api/remote")
+async def receive_remote(remote: RemoteNFC):
+    if remote.satellite not in statuses:
+        return {"message": "Unknown satellite"}
+
+    statuses[remote.satellite] = remote.status
+    print(f"[HUB] Updated {remote.satellite} -> {remote.status}")
+    check_all_correct()
+    return {"message": "Status updated"}
+
+def local_nfc_processor():
+    last_id = None
+    while True:
+        current_read = nfc_state.get_reading()
+        current_id = current_read.get("id")
+        if current_id and current_id != last_id:
+            status = check_nfc_id(current_id)
+            statuses["local"] = status
+            print(f"[HUB] Local reader -> {status}")
+            check_all_correct()
+            last_id = current_id
+        time.sleep(0.1)
+
 # start-up event starts NFC reading
 @app.on_event("startup")
 async def startup_event():
-    # Start NFC reader in a separate thread
-    import threading
-    from nfc_reader import read_nfc
-
-    def nfc_processor():
-        last_processed_id = None
-        while True:
-            current_read = nfc_state.get_reading()
-            current_id = current_read.get("id")
-
-            # Only process if we have a new ID
-            if current_id and current_id != last_processed_id:
-                check_nfc_id(current_id)
-                last_processed_id = current_id
-
-            time.sleep(0.1)  # Small delay to prevent CPU overuse
-
-    # Start both NFC reader and processor threads
-    nfc_thread = threading.Thread(target=read_nfc, daemon=True)
-    processor_thread = threading.Thread(target=nfc_processor, daemon=True)
-
-    nfc_thread.start()
-    processor_thread.start()
+    threading.Thread(target=read_nfc, daemon=True).start()
+    threading.Thread(target=local_nfc_processor, daemon=True).start()
 
 
 # API endpoints
