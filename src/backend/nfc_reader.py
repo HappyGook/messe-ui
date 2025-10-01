@@ -1,9 +1,11 @@
 #!/usr/bin/env python
+# import libraries
 import logging
+
+import gpiozero
+from joyit_mfrc522 import SimpleMFRC522
 import time
 import threading
-from pirc522 import RFID
-import RPi.GPIO as GPIO
 
 # Set up logging
 logging.basicConfig(
@@ -12,121 +14,81 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-READER_CONFIGS = {
-   # "reader1": {"cs": 24},  # GPIO24
-   # "reader2": {"cs": 12},  # GPIO12
-    "reader3": {"cs": 8},   # GPIO8
-   # "reader4": {"cs": 23},  # GPIO23
-   # "reader5": {"cs": 18},  # GPIO18
-}
-
-# Shared reset pin (BCM numbering)
-RST_PIN = 25  # GPIO25
-try:
-    import spidev
-    spi = spidev.SpiDev()
-except Exception as e:
-    logger.error(f"Failed to initialize SPI. Is SPI enabled? Error: {e}")
-    exit(1)
-
-class NFCReader:
-    def __init__(self, name: str, cs_pin: int, rst_pin: int = RST_PIN):
-        self.name = name
-        self.cs_pin = cs_pin
-        try:
-            # Initialize RFID instance with given CE and RST
-            self.rdr = RFID(pin_ce=cs_pin, pin_rst=rst_pin, pin_irq=-1)
-            logger.info(f"Initialized {name} on CS pin GPIO{cs_pin}")
-        except Exception as e:
-            logger.error(f"Failed to init {name} on CS GPIO{cs_pin}: {e}")
-            self.rdr = None
-
-    def read_id(self):
-        """Try to read a card ID from this reader"""
-        if not self.rdr:
-            return None
-
-        try:
-            # Request tag
-            (error, data) = self.rdr.request()
-            if not error:
-                (error, uid) = self.rdr.anticoll()
-                if not error and uid:
-                    # Convert UID list to hex string
-                    return "".join([f"{x:02X}" for x in uid])
-        except Exception as e:
-            logger.error(f"Error reading {self.name}: {e}")
-        return None
-
-    def cleanup(self):
-        if self.rdr:
-            self.rdr.cleanup()
-
-
+# initialize object for rfid module
+reader = SimpleMFRC522()
 
 class NFCState:
-    """Keeps the last read per reader"""
     def __init__(self):
-        self.last_reads: dict[str, dict[str, str | None]] = {
-            name: {"id": None, "timestamp": None}
-            for name in READER_CONFIGS.keys()
+        self.last_read = {
+            "id": None,
+            "timestamp": None
         }
         self.lock = threading.Lock()
+        logger.info("NFCState initialized")
 
-    def update(self, reader_name: str, nfc_id: str):
+    def update(self, nfc_id):
         with self.lock:
-            self.last_reads[reader_name] = {
+            nfc_id=str(nfc_id)
+            self.last_read = {
                 "id": nfc_id,
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
             }
+            logger.debug(f"Raw NFC card detected - ID: {nfc_id}")
 
-    def get(self, reader_name=None):
+    def get_reading(self):
         with self.lock:
-            if reader_name:
-                return dict(self.last_reads.get(reader_name, {}))
-            return dict(self.last_reads)
+            logger.debug(f"Current NFC state: {self.last_read}")
+            return dict(self.last_read)
 
+nfc_state = NFCState()
 
-def read_loop(reader: NFCReader, state: NFCState):
-    logger.info(f"{reader.name} started polling")
-    while True:
-        card_id = reader.read_id()
-        if card_id:
-            logger.info(f"Card {card_id} detected on {reader.name}")
-            state.update(reader.name, card_id)
-            time.sleep(0.5)  # Debounce
-        else:
-            time.sleep(0.1)
-
-
-def main():
-    # Init readers
-    readers = {
-        name: NFCReader(name, cfg["cs"], RST_PIN)
-        for name, cfg in READER_CONFIGS.items()
-    }
-
-    # Shared state
-    nfc_state = NFCState()
-
-    # Start threads
-    threads = []
-    for r in readers.values():
-        if r.rdr:
-            t = threading.Thread(target=read_loop, args=(r, nfc_state), daemon=True)
-            t.start()
-            threads.append(t)
-
-    logger.info("All readers initialized, press Ctrl+C to stop")
-
+# Function to continuously read NFC tags
+def read_nfc():
+    logger.info("NFC Reader starting...")
     try:
         while True:
-            time.sleep(1)
+            try:
+                logger.debug("Attempting to read card...")
+                # Use regular read() instead of read_id_no_block()
+                # since joyit library might have different methods
+                id, text = reader.read()
+                if id:
+                    logger.info(f"Successfully read card - ID: {id}")
+                    nfc_state.update(id)
+                    time.sleep(0.5)
+                else:
+                    logger.debug("No card detected")
+                    time.sleep(0.1)
+            except Exception as e:
+                logger.error(f"Error reading NFC: {str(e)}")
+                time.sleep(1)  # Wait a bit longer if there's an error
+
     except KeyboardInterrupt:
-        logger.info("Stopping readers...")
-        for r in readers.values():
-            r.cleanup()
+        logger.info("NFC Reader stopping (KeyboardInterrupt)")
+    except Exception as e:
+        logger.error(f"Critical error in read_nfc: {str(e)}")
+    finally:
+        try:
+            reader.cleanup()  # Use cleanup() if available in joyit library
+            logger.info("NFC Reader cleaned up")
+        except:
+            pass
 
+# Add a function to check if the reader is working
+def test_reader():
+    logger.info("Testing NFC reader...")
+    try:
+        id, text = reader.read()
+        logger.info(f"Test read successful - ID: {id}, Text: {text}")
+        return True
+    except Exception as e:
+        logger.error(f"Test read failed: {str(e)}")
+        return False
 
+# Optional: Add this to your server startup to test the reader
 if __name__ == "__main__":
-    main()
+    if test_reader():
+        logger.info("NFC Reader test passed, starting continuous reading...")
+        read_nfc()
+    else:
+        logger.error("NFC Reader test failed!")
