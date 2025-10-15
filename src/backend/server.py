@@ -8,6 +8,7 @@ from typing import List
 from nfc_reader import nfc_state, read_nfc
 from db import db
 from led_controller import LEDController
+import RPi.GPIO as GPIO
 
 app = FastAPI()
 led = LEDController()
@@ -46,6 +47,9 @@ KNOWN_IDS = [
     "584184827296",
     "584195321184"
 ]
+
+BUZZER_PIN = 15
+buzzer_clicked = False  # short-lived event flag
 
 def check_nfc_id(nfc_id):
     if not nfc_id:
@@ -118,17 +122,43 @@ def local_nfc_processor():
             last_id = current_id
         time.sleep(0.1)
 
+def setup_buzzer():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(BUZZER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+    # Event detection for button press (HIGH -> LOW)
+    GPIO.add_event_detect(BUZZER_PIN, GPIO.FALLING, callback=buzzer_pressed, bouncetime=200)
+
+def buzzer_pressed(channel):
+    global buzzer_clicked
+    buzzer_clicked = True
+    print("[BUZZER] Button pressed (pin 15 -> LOW)")
+
 # start-up event starts NFC reading
 @app.on_event("startup")
 async def startup_event():
+    setup_buzzer()
     threading.Thread(target=read_nfc, daemon=True).start()
     threading.Thread(target=local_nfc_processor, daemon=True).start()
 
+@app.on_event("shutdown")
+async def shutdown_event():
+    GPIO.cleanup()
+
+
+# API endpoints
 @app.get("/api/statuses")
 async def get_statuses():
     return statuses
 
-# API endpoints
+@app.get("/api/buzzer")
+async def get_buzzer_status():
+    global buzzer_clicked
+    state = buzzer_clicked
+    if buzzer_clicked:
+        buzzer_clicked = False  # reset flag immediately
+    return {"clicked": state}
+
 @app.post("/api/save")
 async def save_user(user: UserSave):
     with db.get_connection() as conn:
