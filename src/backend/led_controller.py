@@ -71,6 +71,7 @@ class LEDController:
 if __name__ == "__main__":
     controller = LEDController()
     try:
+        controller.turn_off()
         logger.info("Testing LED: GREEN")
         controller.set_color((0, 1, 0))
         time.sleep(2)
