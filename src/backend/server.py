@@ -25,10 +25,10 @@ app.add_middleware(
 # In-memory status tracking
 statuses = {
     "local": None,
-    "sat1": None,
-    "sat2": None,
-    "sat3": None,
-    "sat4": None
+    "stl1": None,
+    "stl2": None,
+    "stl3": None,
+    "stl4": None
 }
 
 # list of nfc tags
@@ -97,6 +97,7 @@ class RemoteNFC(BaseModel):
 @app.post("/api/remote")
 async def receive_remote(remote: RemoteNFC):
     if remote.satellite not in statuses:
+        print(f"[HUB] Unknown satellite: {remote.satellite}")
         return {"message": "Unknown satellite"}
 
     statuses[remote.satellite] = remote.status
