@@ -56,6 +56,8 @@ def cleanup():
 if __name__ == "__main__":
     try:
         setup_pins()
+        set_color(False, False, False)
+        time.sleep(2)
 
         logger.info("Testing GREEN")
         set_color(False, True, False)
