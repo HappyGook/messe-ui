@@ -7,8 +7,10 @@ from pydantic import BaseModel
 from typing import List
 from nfc_reader import nfc_state, read_nfc
 from db import db
+from led_controller import LEDController
 
 app = FastAPI()
+led = LEDController()
 
 # Configure CORS
 app.add_middleware(
@@ -54,12 +56,15 @@ def check_nfc_id(nfc_id):
 
     if nfc_id == CORRECT_ID:
         print(f"[NFC] CORRECT ID detected: {nfc_id}")
+        led.set_color((0, 1, 0))
         return "correct"
     elif nfc_id in KNOWN_IDS:
         print(f"[NFC] WRONG ID detected: {nfc_id}")
+        led.set_color((1, 0, 0))
         return "wrong"
     else:
         print(f"[NFC] UNKNOWN ID detected: {nfc_id}")
+        led.set_color((0, 1, 1))
         return "unknown"
 
 def check_all_correct():

@@ -3,8 +3,8 @@ import threading
 import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.backend.nfc_reader import (read_nfc, nfc_state)
-from led_controller import LEDController
+from nfc_reader import (read_nfc, nfc_state)
+from led_controller import (LEDController)
 
 # =====================
 # CONFIG
