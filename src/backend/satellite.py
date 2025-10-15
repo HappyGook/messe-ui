@@ -9,8 +9,8 @@ from led_controller import (LEDController)
 # =====================
 # CONFIG
 # =====================
-HUB_URL = "http://<MAIN_PI_IP>:8080/api/remote"   # <-- hub endpoint
-SATELLITE_ID = "pi-zero-1"  # unique name/id for this RPi (change on each)
+HUB_URL = "http://rpi4.local:8080/api/remote"   # <-- hub endpoint
+SATELLITE_ID = "stl1"  # unique name/id for this RPi (change on each)
 
 CORRECT_ID = "584186924480"
 KNOWN_IDS = [
