@@ -67,10 +67,10 @@ def check_nfc_id(nfc_id):
         led.set_color((0, 1, 1))
         return "unknown"
 
-def check_all_correct():
-    """Check if all 5 readers have status 'correct'."""
-    if all(status == "correct" for status in statuses.values()):
-        print("[HUB] ALL 5 READERS CORRECT! Triggering logic...")
+def check_all_done():
+    """Check if all 5 readers have a status => trigger logic."""
+    if all(status is not None for status in statuses.values()):
+        print("[HUB] ALL 5 READERS HAVE STATUS! Satellites can blink LEDs.")
         # Placeholder for further logic
         # e.g., start process, open gate, etc.
 
@@ -101,7 +101,7 @@ async def receive_remote(remote: RemoteNFC):
 
     statuses[remote.satellite] = remote.status
     print(f"[HUB] Updated {remote.satellite} -> {remote.status}")
-    check_all_correct()
+    check_all_done()
     return {"message": "Status updated"}
 
 def local_nfc_processor():
@@ -113,7 +113,7 @@ def local_nfc_processor():
             status = check_nfc_id(current_id)
             statuses["local"] = status
             print(f"[HUB] Local reader -> {status}")
-            check_all_correct()
+            check_all_done()
             last_id = current_id
         time.sleep(0.1)
 
@@ -123,6 +123,9 @@ async def startup_event():
     threading.Thread(target=read_nfc, daemon=True).start()
     threading.Thread(target=local_nfc_processor, daemon=True).start()
 
+@app.get("/api/statuses")
+async def get_statuses():
+    return statuses
 
 # API endpoints
 @app.post("/api/save")

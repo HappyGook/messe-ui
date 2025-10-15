@@ -12,6 +12,9 @@ from led_controller import (LEDController)
 HUB_URL = "http://rpi4.local:8080/api/remote"   # <-- hub endpoint
 SATELLITE_ID = "stl1"  # unique name/id for this RPi (change on each)
 
+HUB_STATUS_URL = "http://rpi4.local:8080/api/statuses"  # hub endpoint for status
+POLL_INTERVAL = 0.5  # seconds
+
 CORRECT_ID = "584186924480"
 KNOWN_IDS = [
     "119591732478",
@@ -96,6 +99,29 @@ def nfc_processor():
 
         time.sleep(0.1)
 
+def hub_polling():
+    """Periodically check hub statuses and blink LED if all satellites done."""
+    last_blink = False
+    while True:
+        try:
+            resp = requests.get(HUB_STATUS_URL, timeout=1)
+            data = resp.json()
+
+            # Check if all satellites (including local) have non-None status
+            all_done = all(status is not None for status in data.values())
+
+            if all_done and not last_blink:
+                # Blink green/red once
+                led.blink_color((0,1,0), times=3)
+                last_blink = True
+            elif not all_done:
+                led.blink_color((1,0,0), times=3)
+                last_blink = False
+
+        except Exception as e:
+            print(f"[{SATELLITE_ID}] Hub polling failed: {e}")
+
+        time.sleep(POLL_INTERVAL)
 
 # =====================
 # API ENDPOINTS
@@ -112,9 +138,11 @@ async def status():
 async def startup_event():
     nfc_thread = threading.Thread(target=read_nfc, daemon=True)
     processor_thread = threading.Thread(target=nfc_processor, daemon=True)
+    status_thread = threading.Thread(target=hub_polling, daemon=True)
 
     nfc_thread.start()
     processor_thread.start()
+    status_thread.start()
 
 
 if __name__ == "__main__":
