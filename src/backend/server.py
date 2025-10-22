@@ -1,3 +1,4 @@
+import asyncio
 import threading
 import time
 
@@ -60,6 +61,8 @@ KNOWN_IDS = [
 BUZZER_PIN = 15
 buzzer_clicked = False  # short-lived event flag
 
+all_statuses_initialized = False
+
 def check_nfc_id(nfc_id):
     if not nfc_id:
         return None
@@ -99,16 +102,31 @@ class RemoteNFC(BaseModel):
 
 @app.post("/api/remote")
 async def receive_remote(remote: RemoteNFC):
+    global all_statuses_initialized
+
     if remote.satellite not in statuses:
         print(f"[HUB] Unknown satellite: {remote.satellite}")
         return {"message": "Unknown satellite"}
 
     statuses[remote.satellite] = remote.status
     print(f"[HUB] Updated {remote.satellite} -> {remote.status}")
+
+    if all(value is not None for value in statuses.values()):
+        if not all_statuses_initialized:
+            # First time all statuses are available
+            all_statuses_initialized = True
+            asyncio.create_task(evaluate_and_trigger())
+        else:
+            # Evaluate every update after first as well
+            asyncio.create_task(evaluate_and_trigger())
+
     return {"message": "Status updated"}
+
 
 def local_nfc_processor():
     last_id = None
+    global all_statuses_initialized
+
     while True:
         current_read = nfc_state.get_reading()
         current_id = current_read.get("id")
@@ -117,7 +135,43 @@ def local_nfc_processor():
             statuses["local"] = status
             print(f"[HUB] Local reader -> {status}")
             last_id = current_id
+
+            # Trigger LEDs if all statuses known
+            if all(value is not None for value in statuses.values()):
+                if not all_statuses_initialized:
+                    all_statuses_initialized = True
+                    asyncio.run(evaluate_and_trigger())
+                else:
+                    asyncio.run(evaluate_and_trigger())
         time.sleep(0.1)
+
+
+async def evaluate_and_trigger():
+    """Check current statuses and trigger LEDs on satellites."""
+    global statuses
+
+    # Determine color
+    if all(status == "correct" for status in statuses.values()):
+        color = "green"
+    else:
+        color = "red"
+
+    # Local LED
+    led.blink_color((0, 1, 0) if color=="green" else (1, 0, 0), times=3)
+
+    # Satellite LEDs
+    for i in range(1,4):
+        url = f"http://stl{i}/led/{color}"
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                resp = await client.get(url)
+                if resp.status_code == 200:
+                    print(f"[HUB] Triggered {color} on stl{i}")
+                else:
+                    print(f"[HUB] stl{i} responded {resp.status_code}")
+        except Exception as e:
+            print(f"[HUB] Failed to trigger stl{i}: {e}")
+
 
 def setup_buzzer():
     GPIO.setmode(GPIO.BCM)
