@@ -58,7 +58,7 @@ KNOWN_IDS = [
     "584195321184"
 ]
 
-BUZZER_PIN = 15
+BUZZER_PIN = 17
 buzzer_clicked = False  # short-lived event flag
 
 all_statuses_initialized = False
