@@ -2,7 +2,6 @@ import time
 import threading
 import requests
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from nfc_reader import (read_nfc, nfc_state)
 from led_controller import (LEDController)
 
@@ -10,11 +9,9 @@ from led_controller import (LEDController)
 # CONFIG
 # =====================
 HUB_URL = "http://rpi4.local:8080/api/remote"   # <-- hub endpoint
-SATELLITE_ID = "stl1"  # unique name/id for this RPi (change on each)
+SATELLITE_ID = "stl1"  #TODO: unique name/id for this RPi (change on each)
 
-HUB_STATUS_URL = "http://rpi4.local:8080/api/statuses"  # hub endpoint for status
-POLL_INTERVAL = 0.5  # seconds
-
+#TODO: correct ids are to be defined on satellite RPIs
 CORRECT_ID = "584186924480"
 KNOWN_IDS = [
     "119591732478",
@@ -36,14 +33,6 @@ led = LEDController()
 # FastAPI setup
 # =====================
 app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # adjust in production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # =====================
 # NFC Logic
@@ -71,12 +60,6 @@ def nfc_processor():
 
         if current_id and current_id != last_processed_id:
             status = check_nfc_id(current_id)
-            if status == "correct":
-                led.set_color((0, 1, 0)) # Green
-            elif status=="wrong":
-                led.set_color((1, 0, 0)) # Red
-            else:
-                led.set_color((0, 1, 1)) # Unknown (Blue)
 
             print(f"[{SATELLITE_ID}] Detected {status.upper()} ID: {current_id}")
 
@@ -99,30 +82,6 @@ def nfc_processor():
 
         time.sleep(0.1)
 
-def hub_polling():
-    """Periodically check hub statuses and blink LED if all satellites done."""
-    last_blink = False
-    while True:
-        try:
-            resp = requests.get(HUB_STATUS_URL, timeout=1)
-            data = resp.json()
-
-            # Check if all satellites (including local) have non-None status
-            all_done = all(status is not None for status in data.values())
-
-            if all_done and not last_blink:
-                # Blink green/red once
-                led.blink_color((0,1,0), times=3)
-                last_blink = True
-            elif not all_done:
-                led.blink_color((1,0,0), times=3)
-                last_blink = False
-
-        except Exception as e:
-            print(f"[{SATELLITE_ID}] Hub polling failed: {e}")
-
-        time.sleep(POLL_INTERVAL)
-
 # =====================
 # API ENDPOINTS
 # =====================
@@ -131,6 +90,16 @@ async def status():
     """Check that the satellite is alive."""
     return {"satellite": SATELLITE_ID, "status": "running"}
 
+@app.get("/led/red")
+async def red_led():
+    led.blink_color((1, 0, 0), times=3)
+    return {"message": "Red LED blinking"}
+
+@app.get("/led/green")
+async def green_led():
+    led.blink_color((0, 1, 0), times=3)
+    return {"message": "Green LED blinking"}
+
 # =====================
 # Startup threads
 # =====================
@@ -138,13 +107,11 @@ async def status():
 async def startup_event():
     nfc_thread = threading.Thread(target=read_nfc, daemon=True)
     processor_thread = threading.Thread(target=nfc_processor, daemon=True)
-    status_thread = threading.Thread(target=hub_polling, daemon=True)
 
     nfc_thread.start()
     processor_thread.start()
-    status_thread.start()
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8081)  # different port than hub
+    uvicorn.run(app, host="0.0.0.0", port=8080)

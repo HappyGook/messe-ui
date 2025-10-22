@@ -1,6 +1,7 @@
 import threading
 import time
 
+import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -32,7 +33,15 @@ statuses = {
     "stl4": None
 }
 
-# list of nfc tags
+#TODO: correct ids are to be defined on RPIs
+SATELLITE_IPS = {
+    "stl1": "172.16.15.81:8001",
+    "stl2": "172.16.15.82:8001",
+    "stl3": "172.16.15.83:8001",
+    "stl4": "172.16.15.84:8001"
+}
+
+#TODO: correct tags are to be defined on HUB RPi
 CORRECT_ID = "584186924480"  # I chose this one as the "correct" ID
 KNOWN_IDS = [
     "119591732478",
@@ -60,23 +69,13 @@ def check_nfc_id(nfc_id):
 
     if nfc_id == CORRECT_ID:
         print(f"[NFC] CORRECT ID detected: {nfc_id}")
-        led.set_color((0, 1, 0))
         return "correct"
     elif nfc_id in KNOWN_IDS:
         print(f"[NFC] WRONG ID detected: {nfc_id}")
-        led.set_color((1, 0, 0))
         return "wrong"
     else:
         print(f"[NFC] UNKNOWN ID detected: {nfc_id}")
-        led.set_color((0, 1, 1))
         return "unknown"
-
-def check_all_done():
-    """Check if all 5 readers have a status => trigger logic."""
-    if all(status is not None for status in statuses.values()):
-        print("[HUB] ALL 5 READERS HAVE STATUS! Satellites can blink LEDs.")
-        # Placeholder for further logic
-        # e.g., start process, open gate, etc.
 
 class UserSave(BaseModel):
     name: str
@@ -94,7 +93,7 @@ class UserModify(BaseModel):
 # Endpoint for satellites
 # -----------------------
 class RemoteNFC(BaseModel):
-    satellite: str  # e.g., 'sat1'
+    satellite: str  # e.g., 'stl1'
     id: str
     status: str     # 'correct', 'wrong', 'unknown'
 
@@ -106,7 +105,6 @@ async def receive_remote(remote: RemoteNFC):
 
     statuses[remote.satellite] = remote.status
     print(f"[HUB] Updated {remote.satellite} -> {remote.status}")
-    check_all_done()
     return {"message": "Status updated"}
 
 def local_nfc_processor():
@@ -118,7 +116,6 @@ def local_nfc_processor():
             status = check_nfc_id(current_id)
             statuses["local"] = status
             print(f"[HUB] Local reader -> {status}")
-            check_all_done()
             last_id = current_id
         time.sleep(0.1)
 
@@ -133,6 +130,35 @@ def buzzer_pressed(channel):
     global buzzer_clicked
     buzzer_clicked = True
     print("[BUZZER] Button pressed (pin 15 -> LOW)")
+
+    import asyncio
+    asyncio.create_task(trigger_color())
+
+async def trigger_color():
+    color="green"
+    for status in statuses.values():
+        if status !="correct":
+            color="red"
+            break
+
+    # Local LED blinking
+    if color=="green":
+        led.blink_color((0, 1, 0), times=3)
+    else:
+        led.blink_color((1, 0, 0), times=3)
+
+    # Satellites LED blinking
+    for i in range(1,4):
+        url = f"http://stl{i}.local:8080/led/{color}"
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                response = await client.get(url)
+                if response.status_code == 200:
+                    print(f"[HUB] Triggered light on stl{i}")
+                else:
+                    print(f"[HUB] stl{i} responded with {response.status_code}")
+        except Exception as e:
+            print(f"[HUB] Failed to trigger stl{i}: {e}")
 
 # start-up event starts NFC reading
 @app.on_event("startup")
