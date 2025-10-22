@@ -11,13 +11,22 @@ class Database:
         with self.get_connection() as conn:
             conn.execute('''
                          CREATE TABLE IF NOT EXISTS users (
-                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                         name TEXT NOT NULL,
-                         time TEXT NOT NULL,
-                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                                                              id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                              name TEXT NOT NULL,
+                                                              time TEXT NOT NULL,
+                                                              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                         )
+                         ''')
+            conn.execute('''
+                         CREATE TABLE IF NOT EXISTS all_scores (
+                                                                   id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                                   name TEXT NOT NULL,
+                                                                   time TEXT NOT NULL,
+                                                                   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                          )
                          ''')
             conn.commit()
+
 
     @contextmanager
     def get_connection(self):

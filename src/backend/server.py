@@ -197,41 +197,66 @@ async def save_user(user: UserSave):
 @app.get("/api/leaderboard")
 async def get_leaderboard():
     with db.get_connection() as conn:
-        cursor = conn.cursor()
-        rows = cursor.execute("""
-                              SELECT name, time
-                              FROM users
-                              WHERE datetime(created_at) >= datetime('now', '-1 hour')
-                              ORDER BY time
-                              """).fetchall()
+        rows = conn.execute("""
+                            SELECT id, name, time, created_at
+                            FROM users
+                            ORDER BY id
+                            """).fetchall()
         return [dict(row) for row in rows]
 
 @app.get("/api/leaderAll")
 async def get_all_leaders():
     with db.get_connection() as conn:
-        cursor = conn.cursor()
-        rows = cursor.execute("""
-                              SELECT name, time
-                              FROM users
-                              ORDER BY time
-                              """).fetchall()
+        rows = conn.execute("""
+                            SELECT id, name, time, created_at
+                            FROM all_scores
+                            ORDER BY id
+                            """).fetchall()
         return [dict(row) for row in rows]
+
+@app.post("/api/modifyAll")
+async def modify_all(users: List[UserModify]):
+    with db.get_connection() as conn:
+        for user in users:
+            conn.execute(
+                "UPDATE all_scores SET name = ?, time = ? WHERE id = ?",
+                (user.name, user.time, user.id)
+            )
+        conn.commit()
+        return {"message": f"Successfully modified {len(users)} rows in all_scores"}
+
+@app.post("/api/deleteAll")
+async def delete_all(ids: List[int]):
+    with db.get_connection() as conn:
+        placeholders = ','.join('?' * len(ids))
+        conn.execute(f"DELETE FROM all_scores WHERE id IN ({placeholders})", ids)
+        conn.commit()
+        return {"message": f"Successfully deleted {len(ids)} rows from all_scores"}
 
 @app.post("/api/name")
 async def check_name(user: NameCheck):
     with db.get_connection() as conn:
-        cursor = conn.cursor()
-        row = cursor.execute(
-            "SELECT name FROM users WHERE name = ?",
-            (user.name,)
-        ).fetchone()
+        # Check users table
+        row1 = conn.execute("SELECT name FROM users WHERE name = ?", (user.name,)).fetchone()
+        # Check all_scores table
+        row2 = conn.execute("SELECT name FROM all_scores WHERE name = ?", (user.name,)).fetchone()
 
-        if row:
-            raise HTTPException(
-                status_code=400,
-                detail="Name ist bereits vergeben"
-            )
+        if row1 or row2:
+            raise HTTPException(status_code=400, detail="Name ist bereits vergeben")
         return {"success": True, "message": "Verfügbar!"}
+
+@app.post("/api/reset")
+async def reset_users_to_all_scores():
+    with db.get_connection() as conn:
+        # 1. Copy all users to all_scores
+        conn.execute("""
+                     INSERT INTO all_scores (name, time, created_at)
+                     SELECT name, time, created_at FROM users
+                     """)
+        # 2. Delete all users from users table
+        conn.execute("DELETE FROM users")
+        conn.commit()
+    return {"message": "All users moved to all_scores and cleared from users table"}
 
 @app.post("/api/delete")
 async def delete_users(ids: List[int]):

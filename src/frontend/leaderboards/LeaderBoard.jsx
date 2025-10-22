@@ -60,6 +60,25 @@ function LeaderBoard() {
     }
 };
 
+    const handleReset = async () => {
+        if (!window.confirm("Alle aktuellen User in All Scores verschieben und löschen?")) return;
+
+        try {
+            const response = await fetch('/api/reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            console.log("Reset result:", data);
+            // Refresh leaderboard after reset
+            fetchLeaders();
+        } catch (err) {
+            console.error("Reset failed:", err);
+            setError(`Reset failed: ${err.message}`);
+        }
+    };
+
     if (loading) return <div>Loading...</div>;
     if (error) return <div>Error: {error}</div>;
 
@@ -67,6 +86,29 @@ function LeaderBoard() {
 
     return (
         <div>
+            <div style={{ position: 'relative' }}>
+                <button
+                    onClick={handleReset}
+                    style={{
+                        position: 'absolute',
+                        top: '0',
+                        left: '0',
+                        backgroundColor: 'red',
+                        color: 'white',
+                        border: 'none',
+                        padding: '5px 10px',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        zIndex: 10
+                    }}
+                >
+                    Reset
+                </button>
+
+                <div className="leaderboard">
+                    <h2>Leaderboard der letzten Stunde</h2>
+                </div>
+            </div>
             <div className="leaderboard">
                 <h2>Leaderboard der letzten Stunde</h2>
                 {leaders.length === 0 ? (
