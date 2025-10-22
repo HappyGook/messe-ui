@@ -18,10 +18,10 @@ Schnoor corporate + pics on edges
 
 # backend
 
-- hub threading for 5 not none
-- if 5 not none -> led green / red blink
+[x] hub threading for 5 not none
+[x] if 5 not none -> led green / red blink
 - automatic stop (send to frontend), wenn all 5 correct
 - How often sending? 
 - when all 5 placed -> let satellites decide on led??
 
-- send buzzer to name input
+[x] send buzzer to confirm
