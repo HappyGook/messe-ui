@@ -175,16 +175,30 @@ async def evaluate_and_trigger():
 
 def setup_buzzer():
     GPIO.setmode(GPIO.BCM)
-    GPIO.setup(BUZZER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-    # Event detection for button press (HIGH -> LOW)
-    GPIO.add_event_detect(BUZZER_PIN, GPIO.FALLING, callback=buzzer_pressed, bouncetime=200)
+    GPIO.setup(BUZZER_PIN, GPIO.IN)  # no PUD_UP, no edge detection
+    print(f"[BUZZER] Pin {BUZZER_PIN} ready for polling")
 
 def buzzer_pressed(channel):
     print("[BUZZER] Button pressed (pin 15 -> LOW)")
 
     import asyncio
     asyncio.create_task(trigger_color())
+
+def buzzer_polling():
+    global buzzer_clicked
+    last_state = GPIO.input(BUZZER_PIN)
+
+    while True:
+        current_state = GPIO.input(BUZZER_PIN)
+        if current_state != last_state:
+            if current_state == 1:  # HIGH = pressed
+                print("[BUZZER] Button pressed")
+                buzzer_clicked = True
+                import asyncio
+                asyncio.run(trigger_color())  # trigger LEDs
+            last_state = current_state
+        time.sleep(0.05)  # poll every 50ms
+
 
 async def trigger_color():
     color="green"
@@ -218,6 +232,7 @@ async def startup_event():
     setup_buzzer()
     threading.Thread(target=read_nfc, daemon=True).start()
     threading.Thread(target=local_nfc_processor, daemon=True).start()
+    threading.Thread(target=buzzer_polling, daemon=True).start()
 
 @app.on_event("shutdown")
 async def shutdown_event():
