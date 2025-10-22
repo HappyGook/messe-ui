@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import './LeaderBoard.css';
 import '../App.css'
 import {useNavigate} from 'react-router-dom'
+import { useUser } from "../UserContext.jsx";  // <-- import context
+
 
 function LeaderBoard() {
     const [leaders, setLeaders] = useState([]);
@@ -10,6 +12,7 @@ function LeaderBoard() {
     const [showAll, setShowAll] = useState(false);
     const navigate = useNavigate();
     const initialDisplayCount = 7;
+    const { setName } = useUser();
 
     useEffect(() => {
         fetchLeaders();
@@ -111,7 +114,7 @@ function LeaderBoard() {
 
                 )}
             </div>
-            <button className="submit-button" onClick={() => navigate("/")}>
+            <button className="submit-button" onClick={() => { setName(""); navigate("/"); }}>
                 <span> Nochmal Spielen </span>
             </button>
 
