@@ -103,15 +103,14 @@ function LeaderBoard() {
                                 </span>
                             </button>
                         )}
-                        <div>
-                            <button onClick={()=>navigate("/leaderboard")}>
-                                <span> Leaderboard der letzten Stunde </span>
-                            </button>
-                        </div>
-
                     </>
 
                 )}
+                <div>
+                    <button onClick={()=>navigate("/leaderAll")}>
+                        <span> Komplettes Leaderboard (alle Stunden)</span>
+                    </button>
+                </div>
             </div>
             <button className="submit-button" onClick={() => { setName(""); navigate("/"); }}>
                 <span> Nochmal Spielen </span>

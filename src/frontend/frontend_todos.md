@@ -5,8 +5,8 @@
 [x] No nickname bearbeiten, rather just page: pressbuzzer to start
 ## Leaderboards
 
-2 dbs 
-letzte stunde + gesamt
+[x] 2 dbs 
+[x] letzte stunde + gesamt
 
 ## Farben & Still & CSS
 Schnoor corporate + pics on edges

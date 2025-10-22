@@ -86,7 +86,8 @@ function LeaderBoard() {
 
     return (
         <div>
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', paddingTop: '40px' }}>
+                {/* Reset button top-left */}
                 <button
                     onClick={handleReset}
                     style={{
@@ -104,11 +105,7 @@ function LeaderBoard() {
                 >
                     Reset
                 </button>
-
-                <div className="leaderboard">
-                    <h2>Leaderboard der letzten Stunde</h2>
-                </div>
-            </div>
+        </div>
             <div className="leaderboard">
                 <h2>Leaderboard der letzten Stunde</h2>
                 {leaders.length === 0 ? (
@@ -147,14 +144,14 @@ function LeaderBoard() {
                             </button>
 
                         )}
-                        <div>
-                            <button onClick={()=>navigate("/leaderAll")}>
-                                <span> Komplettes Leaderboard (alle Stunden)</span>
-                            </button>
-                        </div>
-                    </>
 
+                    </>
                 )}
+                <div>
+                    <button onClick={()=>navigate("/leaderAll")}>
+                        <span> Komplettes Leaderboard (alle Stunden)</span>
+                    </button>
+                </div>
             </div>
             <button className="submit-button" onClick={() => { setName(""); navigate("/"); }}>
                 <span> Nochmal Spielen </span>
