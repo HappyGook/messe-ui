@@ -1,4 +1,3 @@
-import reactLogo from '../assets/react.svg'
 import schnoorLogo from '../assets/schnoor.svg'
 import {BrowserRouter, Routes, Route} from 'react-router-dom'
 import {UserProvider} from "./UserProvider.jsx";
@@ -16,9 +15,6 @@ function App() {
     return (
     <>
       <div>
-        <a href="https://www.youtube.com/watch?v=xvFZjo5PgG0#ddg-play" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
           <img src={schnoorLogo} className="logo schnoor" alt="Schnoor Logo"></img>
       </div>
 

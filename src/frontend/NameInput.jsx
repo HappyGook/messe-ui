@@ -56,7 +56,7 @@ export default function NameInput(){
     return(
         <div>
             <form onSubmit={handleSubmit}>
-                <h2>Geben Sie ihr Nickname ein!</h2>
+                <h2>Gib Dein Nickname ein!</h2>
                 <p>
                     Maximal 13 Zeichen!
 

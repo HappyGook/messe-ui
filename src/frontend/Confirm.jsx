@@ -10,7 +10,7 @@ function Confirm(){
     useEffect(() => {
         const interval = setInterval(async () => {
             try {
-                const res = await fetch("http://rpi4.local:8080/api/buzzer");
+                const res = await fetch("/api/buzzer");
                 const data = await res.json();
                 if (data.clicked === true) {
                     setStatus(true);
@@ -27,9 +27,8 @@ function Confirm(){
     // Hier wird der Buzzer die Funktion vom Starten! button übernehmen
     return(
         <div>
-            <h2>Willst du mit dem Nickname {name} starten?</h2>
+            <h2>{name}, bist Du bereit? Dann drucke den Buzzer zum Starten!</h2>
             <button className="submit-button" onClick={()=>navigate("/stopwatch")}><span>(Buzzer) Starten!</span></button>
-            <button className="edit-button" onClick={()=>navigate("/")}><span>Nickname Bearbeiten</span></button>
 
             {status && <p style={{ color: "green" }}> Bereit! Starte...</p>}
         </div>
