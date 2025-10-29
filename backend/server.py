@@ -44,21 +44,7 @@ SATELLITE_IPS = {
     "stl4": "172.16.15.84:8080"
 }
 
-#TODO: correct tags are to be defined on HUB RPi
-CORRECT_ID = "584186924480"  # I chose this one as the "correct" ID
-KNOWN_IDS = [
-    "119591732478",
-    "584186924480",
-    "584182731423",
-    "584192212898",
-    "584183803890",
-    "584184705952",
-    "584183784382",
-    "584185919748",
-    "584195346115",
-    "584184827296",
-    "584195321184"
-]
+CORRECT_ID = "584194412400"
 
 BUZZER_PIN = 17
 buzzer_clicked = False  # short-lived event flag
@@ -75,12 +61,9 @@ def check_nfc_id(nfc_id):
     if nfc_id == CORRECT_ID:
         print(f"[NFC] CORRECT ID detected: {nfc_id}")
         return "correct"
-    elif nfc_id in KNOWN_IDS:
+    else:
         print(f"[NFC] WRONG ID detected: {nfc_id}")
         return "wrong"
-    else:
-        print(f"[NFC] UNKNOWN ID detected: {nfc_id}")
-        return "unknown"
 
 class UserSave(BaseModel):
     name: str
@@ -100,7 +83,7 @@ class UserModify(BaseModel):
 class RemoteNFC(BaseModel):
     satellite: str  # e.g., 'stl1'
     id: str
-    status: str     # 'correct', 'wrong', 'unknown'
+    status: str     # 'correct', 'wrong'
 
 @app.post("/api/remote")
 async def receive_remote(remote: RemoteNFC):

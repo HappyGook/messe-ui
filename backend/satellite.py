@@ -11,21 +11,7 @@ from led_controller import (LEDController)
 HUB_URL = "http://rpi4.local:8080/api/remote"   # <-- hub endpoint
 SATELLITE_ID = "stl1"  #TODO: unique name/id for this RPi (change on each)
 
-#TODO: correct ids are to be defined on satellite RPIs
 CORRECT_ID = "584186924480"
-KNOWN_IDS = [
-    "119591732478",
-    "584186924480",
-    "584182731423",
-    "584192212898",
-    "584183803890",
-    "584184705952",
-    "584183784382",
-    "584185919748",
-    "584195346115",
-    "584184827296",
-    "584195321184"
-]
 
 led = LEDController()
 
@@ -45,10 +31,8 @@ def check_nfc_id(nfc_id: str):
     nfc_id = str(nfc_id)
     if nfc_id == CORRECT_ID:
         return "correct"
-    elif nfc_id in KNOWN_IDS:
-        return "wrong"
     else:
-        return "unknown"
+        return "wrong"
 
 
 def nfc_processor():
