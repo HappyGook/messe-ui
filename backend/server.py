@@ -132,32 +132,59 @@ def local_nfc_processor():
 
 
 async def evaluate_and_trigger():
-    """Check current statuses and trigger LEDs on satellites."""
+    """Check current statuses and trigger LEDs individually."""
 
     global statuses
 
-    color_name = "green" if all(status == "correct" for status in statuses.values()) else "red"
-    rgb_color = (0, 1, 0) if color_name == "green" else (1, 0, 0)
+    # --- Local LED ---
+    local_status = statuses.get("local")
+    if local_status == "correct":
+        local_color = (0, 1, 0)
+    elif local_status == "wrong":
+        local_color = (1, 0, 0)
+    else:
+        local_color = (0, 0, 0)  # off if unknown
 
-    # --- Local LED: run in separate thread to avoid blocking ---
     loop = asyncio.get_event_loop()
-    loop.run_in_executor(None, led.blink_color, rgb_color, 0.5, 3)
+    loop.run_in_executor(None, led.blink_color, local_color, 0.5, 3)
 
-    # --- Satellite LEDs: trigger concurrently ---
-    async def trigger_satellite(i: int):
+    # --- Satellite LEDs ---
+    async def trigger_satellite(name: str, i: int):
+        status = statuses.get(name)
+        if status == "correct":
+            color_name = "green"
+        elif status == "wrong":
+            color_name = "red"
+        else:
+            color_name = "off"
+
+        if color_name == "off":
+            return
+
         url = f"http://stl{i}.local:8080/led/{color_name}"
         try:
             async with httpx.AsyncClient(timeout=3.0) as client:
                 response = await client.get(url)
                 if response.status_code == 200:
-                    print(f"[HUB] Triggered light on stl{i}")
+                    print(f"[HUB] Triggered light on {name} ({color_name})")
                 else:
-                    print(f"[HUB] stl{i} responded with {response.status_code}")
+                    print(f"[HUB] {name} responded with {response.status_code}")
         except Exception as e:
-            print(f"[HUB] Failed to trigger stl{i}: {e}")
+            print(f"[HUB] Failed to trigger {name}: {e}")
 
-    # schedule all satellite triggers concurrently
-    await asyncio.gather(*(trigger_satellite(i) for i in range(1, 4)))
+    # Map satellite names to numbers
+    satellites = [("stl1", 1), ("stl2", 2), ("stl3", 3)]
+    await asyncio.gather(*(trigger_satellite(name, i) for name, i in satellites))
+
+    # --- Reset statuses 3 seconds after victory ---
+    if all(status == "correct" for status in statuses.values()):
+        async def reset_statuses():
+            await asyncio.sleep(3)
+            for key in statuses:
+                statuses[key] = None
+            print("[HUB] Statuses reset after victory")
+
+        asyncio.create_task(reset_statuses())
 
 def setup_buzzer():
     GPIO.setmode(GPIO.BCM)
