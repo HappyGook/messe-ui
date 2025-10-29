@@ -135,7 +135,7 @@ function LeaderBoard() {
                             </tbody>
                         </table>
                         {leaders.length > initialDisplayCount && (
-                            <button
+                            <button className="transfer-button"
                                 onClick={() => setShowAll(!showAll)}
                             >
                                 <span>
@@ -148,7 +148,7 @@ function LeaderBoard() {
                     </>
                 )}
                 <div>
-                    <button onClick={()=>navigate("/leaderAll")}>
+                    <button className="transfer-button" onClick={()=>navigate("/leaderAll")}>
                         <span> Komplettes Leaderboard (alle Stunden)</span>
                     </button>
                 </div>

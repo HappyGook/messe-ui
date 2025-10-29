@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 
 const Admin = () => {
@@ -10,8 +10,16 @@ const Admin = () => {
     const [editingCell, setEditingCell] = useState(null);
     const [editValue, setEditValue] = useState('');
     const [originalData, setOriginalData] = useState({});
+    const [activeTable, setActiveTable] = useState('users'); // "users" or "all_scores"
 
-    const correctPassword = "admin123"; // Sollte noch sicherer behandelt werden XD
+    const correctPassword = "admin123"; // TODO: secure later
+
+    // Automatically reload data when switching tables
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchTableData();
+        }
+    }, [activeTable]);
 
     const handlePasswordSubmit = (e) => {
         e.preventDefault();
@@ -24,21 +32,18 @@ const Admin = () => {
     };
 
     const fetchTableData = async () => {
+        const url = activeTable === 'users' ? '/api/getall' : '/api/leaderAll';
         try {
-            const response = await fetch('/api/getall');
-            if (!response.ok) {
-                throw new Error('Failed to fetch data');
-            }
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Failed to fetch data');
             const data = await response.json();
             setTableData(data);
 
-            // og Daten für jede Reihe
             const origData = {};
             data.forEach(row => {
                 origData[row.id] = { ...row };
             });
-            setOriginalData(origData)
-
+            setOriginalData(origData);
         } catch (error) {
             setError('Error fetching data: ' + error.message);
         }
@@ -46,27 +51,23 @@ const Admin = () => {
 
     const handleCheckboxChange = (id) => {
         const newSelected = new Set(selectedRows);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
+        if (newSelected.has(id)) newSelected.delete(id);
+        else newSelected.add(id);
         setSelectedRows(newSelected);
     };
 
     const handleDelete = async () => {
         if (selectedRows.size === 0) return;
+        const endpoint = activeTable === 'users' ? '/api/delete' : '/api/deleteAll';
 
         try {
-            const response = await fetch('/api/delete', {
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(Array.from(selectedRows))
             });
 
             if (!response.ok) throw new Error('Failed to delete rows');
-
-            // Refresh the table data
             fetchTableData();
             setSelectedRows(new Set());
         } catch (error) {
@@ -85,13 +86,15 @@ const Admin = () => {
             return;
         }
 
+        const endpoint = activeTable === 'users' ? '/api/modify' : '/api/modifyAll';
+
         try {
             const updatedRow = {
                 ...originalData[id],
                 [field]: editValue
             };
 
-            const response = await fetch('/api/modify', {
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify([updatedRow])
@@ -99,7 +102,6 @@ const Admin = () => {
 
             if (!response.ok) throw new Error('Failed to update row');
 
-            // Update local data
             setTableData(tableData.map(row =>
                 row.id === id ? { ...row, [field]: editValue } : row
             ));
@@ -109,7 +111,6 @@ const Admin = () => {
             });
         } catch (error) {
             setError('Error updating row: ' + error.message);
-            // Revert to original value
             setTableData(tableData.map(row =>
                 row.id === id ? { ...originalData[id] } : row
             ));
@@ -118,14 +119,14 @@ const Admin = () => {
     };
 
     const handleKeyPress = (e, id, field) => {
-        if (e.key === 'Enter') {
-            handleCellChange(id, field);
-        } else if (e.key === 'Escape') {
+        if (e.key === 'Enter') handleCellChange(id, field);
+        else if (e.key === 'Escape') {
             setEditingCell(null);
             setEditValue(originalData[id][field]);
         }
     };
 
+    // UI for password login
     if (!isAuthenticated) {
         return (
             <div className="admin-login">
@@ -147,10 +148,27 @@ const Admin = () => {
         );
     }
 
+    // UI for admin panel
     return (
         <div className="admin-panel">
             <h2>Admin Panel</h2>
             {error && <p className="error-message">{error}</p>}
+
+            <div className="table-switcher">
+                <button
+                    className={activeTable === 'users' ? 'active' : ''}
+                    onClick={() => setActiveTable('users')}
+                >
+                    Users Table
+                </button>
+                <button
+                    className={activeTable === 'all_scores' ? 'active' : ''}
+                    onClick={() => setActiveTable('all_scores')}
+                >
+                    All Scores Table
+                </button>
+            </div>
+
             <div className="table-container">
                 <table>
                     <thead>
@@ -207,13 +225,13 @@ const Admin = () => {
                     </tbody>
                 </table>
             </div>
+
             <div className="admin-controls">
                 <button
                     onClick={handleDelete}
                     disabled={selectedRows.size === 0}
-                    className="delete-button"
                 >
-                    Delete Selected ({selectedRows.size})
+                    Delete Selected
                 </button>
             </div>
         </div>

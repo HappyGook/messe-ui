@@ -1,3 +1,17 @@
+/* Apply Verdana globally */
+body, html {
+  font-family: Verdana, serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure headers, paragraphs, inputs, buttons, etc. all inherit Verdana */
+h1, h2, h3, h4, h5, h6,
+p, a, button, input, textarea, select, label, th, td, span, div {
+  font-family: inherit;
+}
+
+/* Root container */
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -5,49 +19,49 @@
   text-align: center;
 }
 
+/* Logo styles */
 .logo {
   height: 6em;
-  padding: 1.5em;
   will-change: filter;
   transition: filter 300ms;
 }
 
-.logo.schnoor{
+.logo.schnoor {
+  height: 15em;
   padding: 1.5em;
   will-change: filter;
   transition: filter 300ms;
 }
 
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  filter: drop-shadow(0 0 2em #0E71B5);
 }
 
-.submit-button{
-  display: inline-block;
-  border-radius: 4px;
-  background-color: #1e33f4;
+/* Submit button */
+.submit-button {
+  width: 100%;
+  padding: 10px;
+  background: #0E71B5;
+  color: white;
   border: none;
-  color: #FFFFFF;
-  text-align: center;
-  font-size: 28px;
-  padding: 20px;
-  width: fit-content;
-  transition: all 0.5s;
+  border-radius: 4px;
   cursor: pointer;
-  margin: 5px;
+  font-size: 16px;
+  transition: background 0.5s;
 }
 
-.submit-button span{
+.submit-button:hover {
+  background: #0056b3;
+}
+
+.submit-button span {
   cursor: pointer;
   display: inline-block;
   position: relative;
   transition: 0.5s;
 }
 
-.submit-button span:after{
+.submit-button span:after {
   content: '\00bb';
   position: absolute;
   opacity: 0;
@@ -56,76 +70,27 @@
   transition: 0.5s;
 }
 
-.submit-button:hover span{
+.submit-button:hover span {
   padding-right: 25px;
 }
 
-.submit-button:hover span:after{
+.submit-button:hover span:after {
   opacity: 1;
-  right:0;
+  right: 0;
 }
 
-input[type=text] {
+/* Inputs */
+input[type=text], .password-input, td input[type="text"] {
   width: 100%;
-  font-size: 20px;
-  padding: 12px 20px;
+  font-size: 16px;
+  padding: 10px 20px;
   margin: 8px 0;
+  border: 1px solid #ddd;
   box-sizing: border-box;
-}
-
-.edit-button{
-  display: inline-block;
   border-radius: 4px;
-  background-color: #ff1a1a;
-  border: none;
-  color: #FFFFFF;
-  text-align: center;
-  font-size: 28px;
-  padding: 20px;
-  width: fit-content;
-  transition: all 0.5s;
-  cursor: pointer;
-  margin: 5px;
 }
 
-.edit-button:hover{
-  display: inline-block;
-  border-radius: 4px;
-  background-color: #ff4f4f;
-  border: none;
-  color: #FFFFFF;
-  text-align: center;
-  font-size: 28px;
-  padding: 20px;
-  width: fit-content;
-  transition: all 0.5s;
-  cursor: pointer;
-  margin: 5px;
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(1) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
+/* Admin login */
 .admin-login {
   max-width: 400px;
   margin: 50px auto;
@@ -136,15 +101,7 @@ input[type=text] {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.password-input {
-  width: 100%;
-  padding: 10px;
-  margin: 10px 0;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
-}
-
+/* Admin controls */
 .admin-controls {
   margin-top: 20px;
   padding: 10px;
@@ -152,13 +109,32 @@ input[type=text] {
   justify-content: flex-end;
 }
 
+/* Buttons */
+.edit-button, .delete-button {
+  display: inline-block;
+  border-radius: 4px;
+  border: none;
+  color: #fff;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.5s;
+}
+
+.edit-button {
+  background-color: #ff1a1a;
+  font-size: 28px;
+  padding: 20px;
+  margin: 5px;
+}
+
+.edit-button:hover {
+  background-color: #ff4f4f;
+}
+
 .delete-button {
   padding: 10px 20px;
   background-color: #dc3545;
-  color: white;
-  border: none;
   border-radius: 4px;
-  cursor: pointer;
 }
 
 .delete-button:disabled {
@@ -170,54 +146,7 @@ input[type=text] {
   background-color: #c82333;
 }
 
-td input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-td input[type="text"] {
-  width: 100%;
-  padding: 5px;
-  border: 1px solid #007bff;
-  border-radius: 3px;
-  font-size: inherit;
-}
-
-td {
-  cursor: pointer;
-}
-
-td:hover {
-  background-color: #f8f9fa;
-}
-
-.submit-button {
-  width: 100%;
-  padding: 10px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.submit-button:hover {
-  background: #0056b3;
-}
-
-.error-message {
-  color: red;
-  margin-top: 10px;
-}
-
-.admin-panel {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
+/* Tables */
 .table-container {
   overflow-x: auto;
   margin-top: 20px;
@@ -233,14 +162,4 @@ table {
 th, td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #ddd;
-}
-
-th {
-  background: #f5f5f5;
-  font-weight: bold;
-}
-
-tr:hover {
-  background: #f8f9fa;
 }
