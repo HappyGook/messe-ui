@@ -161,7 +161,7 @@ async def evaluate_and_trigger():
 
 def setup_buzzer():
     GPIO.setmode(GPIO.BCM)
-    GPIO.setup(BUZZER_PIN, GPIO.IN)  # no PUD_UP, no edge detection
+    GPIO.setup(BUZZER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     print(f"[BUZZER] Pin {BUZZER_PIN} ready for polling")
 
 def buzzer_pressed(channel):
@@ -173,12 +173,19 @@ def buzzer_polling():
 
     while True:
         current_state = GPIO.input(BUZZER_PIN)
-        if current_state != last_state:
-            if current_state == 1:  # HIGH = pressed
-                print("[BUZZER] Button pressed")
-                buzzer_clicked = True
-            last_state = current_state
-        time.sleep(0.05)  # poll every 50ms
+        # Detect rising edge: LOW -> HIGH
+        if current_state == 1 and last_state == 0:
+            print("[BUZZER] Button pressed")
+            buzzer_clicked = True
+        # Detect falling edge: HIGH -> LOW
+        if current_state == 0 and last_state == 1:
+            print("[BUZZER] Button released")
+            # automatic reset
+            buzzer_clicked = False
+
+        last_state = current_state
+        time.sleep(0.05)
+
 
 # start-up event starts NFC reading
 @app.on_event("startup")
