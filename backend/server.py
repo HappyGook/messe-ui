@@ -169,7 +169,7 @@ async def evaluate_and_trigger():
         except Exception as e:
             print(f"[HUB] Failed to trigger {name}: {e}")
 
-    satellites = [("stl1", 1), ("stl2", 2), ("stl3", 3)]
+    satellites = [("stl1", 1), ("stl2", 2), ("stl3", 3), ("stl4", 4)]
     await asyncio.gather(*(trigger_satellite(name, i) for name, i in satellites))
 
     # --- Reset game state after victory ---
@@ -191,7 +191,7 @@ async def evaluate_and_trigger():
                 except Exception as e:
                     print(f"[HUB] Failed to notify stl{i}: {e}")
 
-            await asyncio.gather(*(notify_satellite_reset(i) for i in range(1, 4)))
+            await asyncio.gather(*(notify_satellite_reset(i) for i in range(1, 5)))
 
             # Reset global flag to allow next game
             global all_statuses_initialized
@@ -209,6 +209,28 @@ def setup_buzzer():
 def buzzer_pressed(channel):
     print("[BUZZER] Button pressed (pin 15 -> LOW)")
 
+async def reset_all_satellites():
+    """Notify all satellites to reset their state."""
+    print("[HUB] Resetting all satellites for new game...")
+
+    async def notify_satellite_reset(i: int):
+        url = f"http://stl{i}.local:8080/api/reset"
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                await client.get(url)
+                print(f"[HUB] Notified stl{i} to reset last_processed_id")
+        except Exception as e:
+            print(f"[HUB] Failed to notify stl{i}: {e}")
+
+    await asyncio.gather(*(notify_satellite_reset(i) for i in range(1, 5)))
+
+    # Reset local statuses and flags
+    for key in statuses:
+        statuses[key] = None
+    global all_statuses_initialized
+    all_statuses_initialized = False
+    print("[HUB] Local statuses cleared and ready for new game")
+
 def buzzer_polling():
     global buzzer_clicked
     last_state = GPIO.input(BUZZER_PIN)
@@ -221,6 +243,7 @@ def buzzer_polling():
             if current_state == 1:
                 print("[BUZZER] Rising edge detected -> Button PRESSED")
                 buzzer_clicked = True
+                asyncio.run(reset_all_satellites())
             elif current_state == 0:
                 print("[BUZZER] Falling edge detected -> Button RELEASED")
                 buzzer_clicked = False
