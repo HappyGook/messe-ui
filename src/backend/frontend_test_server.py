@@ -8,6 +8,15 @@ from db import db
 
 app = FastAPI()
 
+buzzer_clicked = False
+
+statuses = {
+    "local": None,
+    "stl1": None,
+    "stl2": None,
+    "stl3": None,
+    "stl4": None
+}
 
 # Configure CORS
 app.add_middleware(
@@ -100,6 +109,32 @@ async def check_name(user: NameCheck):
         if row1 or row2:
             raise HTTPException(status_code=400, detail="Name ist bereits vergeben")
         return {"success": True, "message": "Verfügbar!"}
+
+@app.get("/api/buzzer")
+async def get_buzzer_status():
+    global buzzer_clicked
+    state = buzzer_clicked
+    if buzzer_clicked:
+        buzzer_clicked = False  # reset flag immediately
+    return {"clicked": state}
+
+@app.get("/api/statuses")
+async def get_statuses():
+    return statuses
+
+# Test APIs for frontend
+@app.get("/api/setbuzzer")
+async def set_buzzer_status():
+    global buzzer_clicked
+    buzzer_clicked = True
+
+@app.get("/api/setstatus")
+async def set_statuses():
+    statuses["local"]="correct"
+    statuses["stl1"]="correct"
+    statuses["stl2"]="correct"
+    statuses["stl3"]="correct"
+    statuses["stl4"]="correct"
 
 @app.post("/api/reset")
 async def reset_users_to_all_scores():

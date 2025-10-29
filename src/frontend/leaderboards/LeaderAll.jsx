@@ -107,8 +107,8 @@ function LeaderBoard() {
 
                 )}
                 <div>
-                    <button onClick={()=>navigate("/leaderAll")}>
-                        <span> Komplettes Leaderboard (alle Stunden)</span>
+                    <button onClick={()=>navigate("/leaderboard")}>
+                        <span> Leaderboard der letzten Stunde</span>
                     </button>
                 </div>
             </div>
