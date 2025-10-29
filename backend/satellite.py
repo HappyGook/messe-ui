@@ -4,14 +4,12 @@ import requests
 from fastapi import FastAPI
 from nfc_reader import (read_nfc, nfc_state)
 from led_controller import (LEDController)
+from sat_config import SATELLITE_ID, CORRECT_ID
 
 # =====================
 # CONFIG
 # =====================
 HUB_URL = "http://rpi4.local:8080/api/remote"   # <-- hub endpoint
-SATELLITE_ID = "stl1"  #TODO: unique name/id for this RPi (change on each)
-
-CORRECT_ID = "584186924480"
 
 led = LEDController()
 
