@@ -170,20 +170,25 @@ def buzzer_pressed(channel):
 def buzzer_polling():
     global buzzer_clicked
     last_state = GPIO.input(BUZZER_PIN)
+    print(f"[BUZZER] Starting poll. Initial state: {last_state}")
 
     while True:
         current_state = GPIO.input(BUZZER_PIN)
-        # Detect rising edge: LOW -> HIGH
-        if current_state == 1 and last_state == 0:
-            print("[BUZZER] Button pressed")
-            buzzer_clicked = True
-        # Detect falling edge: HIGH -> LOW
-        if current_state == 0 and last_state == 1:
-            print("[BUZZER] Button released")
-            # automatic reset
-            buzzer_clicked = False
 
-        last_state = current_state
+        if current_state != last_state:
+            if current_state == 1:
+                print("[BUZZER] Rising edge detected -> Button PRESSED")
+                buzzer_clicked = True
+            elif current_state == 0:
+                print("[BUZZER] Falling edge detected -> Button RELEASED")
+                # Option 1: reset flag automatically here
+                # buzzer_clicked = False
+                # Option 2: leave it to /api/buzzer to reset
+                print(f"[BUZZER] Current buzzer_clicked flag: {buzzer_clicked}")
+
+            last_state = current_state
+
+        # Log every few seconds to see if state sticks
         time.sleep(0.05)
 
 
@@ -222,8 +227,10 @@ async def get_statuses():
 async def get_buzzer_status():
     global buzzer_clicked
     state = buzzer_clicked
+    print(f"[API] /api/buzzer called -> buzzer_clicked={state}")
     if buzzer_clicked:
         buzzer_clicked = False  # reset flag immediately
+        print("[API] buzzer_clicked reset to False after read")
     return {"clicked": state}
 
 @app.post("/api/save")
