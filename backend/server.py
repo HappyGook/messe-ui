@@ -146,16 +146,17 @@ async def evaluate_and_trigger():
 
     # Satellite LEDs
     for i in range(1,4):
-        url = f"http://stl{i}/led/{color}"
+        url = f"http://stl{i}.local:8080/led/{color}"
         try:
             async with httpx.AsyncClient(timeout=3.0) as client:
-                resp = await client.get(url)
-                if resp.status_code == 200:
-                    print(f"[HUB] Triggered {color} on stl{i}")
+                response = await client.get(url)
+                if response.status_code == 200:
+                    print(f"[HUB] Triggered light on stl{i}")
                 else:
-                    print(f"[HUB] stl{i} responded {resp.status_code}")
+                    print(f"[HUB] stl{i} responded with {response.status_code}")
         except Exception as e:
             print(f"[HUB] Failed to trigger stl{i}: {e}")
+
 
 
 def setup_buzzer():
@@ -165,9 +166,6 @@ def setup_buzzer():
 
 def buzzer_pressed(channel):
     print("[BUZZER] Button pressed (pin 15 -> LOW)")
-
-    import asyncio
-    asyncio.create_task(trigger_color())
 
 def buzzer_polling():
     global buzzer_clicked
@@ -179,37 +177,8 @@ def buzzer_polling():
             if current_state == 1:  # HIGH = pressed
                 print("[BUZZER] Button pressed")
                 buzzer_clicked = True
-                import asyncio
-                asyncio.run(trigger_color())  # trigger LEDs
             last_state = current_state
         time.sleep(0.05)  # poll every 50ms
-
-
-async def trigger_color():
-    color="green"
-    for status in statuses.values():
-        if status !="correct":
-            color="red"
-            break
-
-    # Local LED blinking
-    if color=="green":
-        led.blink_color((0, 1, 0), times=3)
-    else:
-        led.blink_color((1, 0, 0), times=3)
-
-    # Satellites LED blinking
-    for i in range(1,4):
-        url = f"http://stl{i}.local:8080/led/{color}"
-        try:
-            async with httpx.AsyncClient(timeout=3.0) as client:
-                response = await client.get(url)
-                if response.status_code == 200:
-                    print(f"[HUB] Triggered light on stl{i}")
-                else:
-                    print(f"[HUB] stl{i} responded with {response.status_code}")
-        except Exception as e:
-            print(f"[HUB] Failed to trigger stl{i}: {e}")
 
 # start-up event starts NFC reading
 @app.on_event("startup")
@@ -236,7 +205,6 @@ async def set_statuses():
     statuses["stl2"]="correct"
     statuses["stl3"]="correct"
     statuses["stl4"]="correct"
-
 
 # API endpoints
 @app.get("/api/statuses")
