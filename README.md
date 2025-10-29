@@ -26,4 +26,12 @@
 -[x] Zeitformatierung
   - Wurde gemacht, auf der Stoppuhr Seite sichtbar
 
+-[] Blinken zu leuchten + resetting
+ 
+-[] Zeiten in Highscore nach Bundeln
+
+-[] ?? Nur wenn 5 drauf leuchten
+
+-[] Spiel reset 
+
 

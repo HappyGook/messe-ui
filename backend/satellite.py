@@ -74,13 +74,13 @@ async def status():
 
 @app.get("/led/red")
 async def red_led():
-    led.blink_color((1, 0, 0), times=3)
-    return {"message": "Red LED blinking"}
+    led.set_color((1, 0, 0))  # constant red
+    return {"message": "Red LED on"}
 
 @app.get("/led/green")
 async def green_led():
-    led.blink_color((0, 1, 0), times=3)
-    return {"message": "Green LED blinking"}
+    led.set_color((0, 1, 0))  # constant green
+    return {"message": "Green LED on"}
 
 # =====================
 # Satellite reset endpoint
