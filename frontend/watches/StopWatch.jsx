@@ -87,11 +87,15 @@ function Stopwatch() {
 
                 const statuses = await response.json();
 
-                // Example victory condition: all satellites are "done"
+                // Log all statuses
+                console.log("[FRONTEND] Current statuses:", statuses);
+
+                // Victory condition: all satellites are "correct"
                 const victoryAchieved = Object.values(statuses)
-                    .every(status => status === "correct"); // adjust condition
+                    .every(status => status === "correct");
 
                 if (victoryAchieved) {
+                    console.log("[FRONTEND] Victory achieved!");
                     handleClick();
                 }
             } catch (e) {
