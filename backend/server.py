@@ -133,20 +133,19 @@ def local_nfc_processor():
 
 async def evaluate_and_trigger():
     """Check current statuses and trigger LEDs on satellites."""
+
     global statuses
 
-    # Determine color
-    if all(status == "correct" for status in statuses.values()):
-        color = "green"
-    else:
-        color = "red"
+    color_name = "green" if all(status == "correct" for status in statuses.values()) else "red"
+    rgb_color = (0, 1, 0) if color_name == "green" else (1, 0, 0)
 
-    # Local LED
-    led.blink_color((0, 1, 0) if color=="green" else (1, 0, 0), times=3)
+    # --- Local LED: run in separate thread to avoid blocking ---
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(None, led.blink_color, rgb_color, 0.5, 3)
 
-    # Satellite LEDs
-    for i in range(1,4):
-        url = f"http://stl{i}.local:8080/led/{color}"
+    # --- Satellite LEDs: trigger concurrently ---
+    async def trigger_satellite(i: int):
+        url = f"http://stl{i}.local:8080/led/{color_name}"
         try:
             async with httpx.AsyncClient(timeout=3.0) as client:
                 response = await client.get(url)
@@ -157,7 +156,8 @@ async def evaluate_and_trigger():
         except Exception as e:
             print(f"[HUB] Failed to trigger stl{i}: {e}")
 
-
+    # schedule all satellite triggers concurrently
+    await asyncio.gather(*(trigger_satellite(i) for i in range(1, 4)))
 
 def setup_buzzer():
     GPIO.setmode(GPIO.BCM)
