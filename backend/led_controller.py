@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 # ----------------------
 # Assign GPIO pins for single RGB LED per satellite
 # TODO: Decide which pins are LEDs on
-LED_PINS = {"red": 13, "green": 19, "blue": 26}
+LED_PINS = {"red": 19, "green": 13, "blue": 26}
 
 class LEDController:
     def __init__(self):

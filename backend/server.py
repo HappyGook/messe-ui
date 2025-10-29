@@ -143,7 +143,7 @@ async def evaluate_and_trigger():
     elif local_status == "wrong":
         local_color = (1, 0, 0)
     else:
-        local_color = (0, 0, 0)  # off if unknown
+        local_color = (0, 0, 0)  # keep off if unknown
 
     loop = asyncio.get_event_loop()
     loop.run_in_executor(None, led.blink_color, local_color, 0.5, 3)
@@ -156,10 +156,7 @@ async def evaluate_and_trigger():
         elif status == "wrong":
             color_name = "red"
         else:
-            color_name = "off"
-
-        if color_name == "off":
-            return
+            return  # unknown/off, do nothing
 
         url = f"http://stl{i}.local:8080/led/{color_name}"
         try:
@@ -172,19 +169,37 @@ async def evaluate_and_trigger():
         except Exception as e:
             print(f"[HUB] Failed to trigger {name}: {e}")
 
-    # Map satellite names to numbers
     satellites = [("stl1", 1), ("stl2", 2), ("stl3", 3)]
     await asyncio.gather(*(trigger_satellite(name, i) for name, i in satellites))
 
-    # --- Reset statuses 3 seconds after victory ---
+    # --- Reset game state after victory ---
     if all(status == "correct" for status in statuses.values()):
-        async def reset_statuses():
+        async def reset_game_state():
             await asyncio.sleep(3)
+
+            # Reset in-memory statuses for a fresh game
             for key in statuses:
                 statuses[key] = None
-            print("[HUB] Statuses reset after victory")
 
-        asyncio.create_task(reset_statuses())
+            # Notify satellites to reset last_processed_id so repeated tags are recognized
+            async def notify_satellite_reset(i: int):
+                url = f"http://stl{i}.local:8080/api/reset"
+                try:
+                    async with httpx.AsyncClient(timeout=2.0) as client:
+                        await client.get(url)
+                        print(f"[HUB] Notified stl{i} to reset last_processed_id")
+                except Exception as e:
+                    print(f"[HUB] Failed to notify stl{i}: {e}")
+
+            await asyncio.gather(*(notify_satellite_reset(i) for i in range(1, 4)))
+
+            # Reset global flag to allow next game
+            global all_statuses_initialized
+            all_statuses_initialized = False
+
+            print("[HUB] Game state fully reset, ready for next round")
+
+        asyncio.create_task(reset_game_state())
 
 def setup_buzzer():
     GPIO.setmode(GPIO.BCM)

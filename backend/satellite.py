@@ -85,6 +85,33 @@ async def green_led():
     return {"message": "Green LED blinking"}
 
 # =====================
+# Satellite reset endpoint
+# =====================
+@app.get("/api/reset")
+async def reset_satellite():
+    """
+    Reset the satellite state after a game:
+    - Turn off local LED
+    - Reset last processed NFC ID
+    - Reset local status
+    """
+    global last_processed_id
+    global local_status
+
+    # Reset the last processed NFC ID so repeated tags are sent again
+    last_processed_id = None
+
+    # Reset local status (if you use it)
+    local_status = None
+
+    # Turn off local LED
+    led.turn_off()
+
+    print(f"[{SATELLITE_ID}] Satellite reset completed")
+
+    return {"message": f"{SATELLITE_ID} reset successful"}
+
+# =====================
 # Startup threads
 # =====================
 @app.on_event("startup")
