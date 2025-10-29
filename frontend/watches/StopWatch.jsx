@@ -1,7 +1,7 @@
 import { useStopwatch } from 'react-timer-hook';
 import { useNavigate } from 'react-router-dom';
 import "./Watches.css";
-import "./../App.css";
+import "../App.css";
 import { useUser } from "../UserContext.jsx";
 import useSound from 'use-sound';
 import victorySound from '../sounds/victory.mp3';
@@ -110,9 +110,13 @@ function Stopwatch() {
                 :<span>{String(seconds).padStart(2,'0')}</span>
                 .<span>{Math.round(milliseconds/10)}</span>
             </div>
+            {/* IF BUTTON NEEDED
             <button className="submit-button" onClick={handleClick}>
+
                 <span>(Buzzer) Fertig!</span>
+
             </button>
+            */}
         </div>
     );
 }

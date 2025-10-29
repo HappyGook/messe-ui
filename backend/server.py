@@ -1,10 +1,12 @@
 import asyncio
+import os
 import threading
 import time
 
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List
 from nfc_reader import nfc_state, read_nfc
@@ -238,6 +240,20 @@ async def startup_event():
 async def shutdown_event():
     GPIO.cleanup()
 
+# Test APIs for frontend
+@app.get("/api/setbuzzer")
+async def set_buzzer_status():
+    global buzzer_clicked
+    buzzer_clicked = True
+
+@app.get("/api/setstatus")
+async def set_statuses():
+    statuses["local"]="correct"
+    statuses["stl1"]="correct"
+    statuses["stl2"]="correct"
+    statuses["stl3"]="correct"
+    statuses["stl4"]="correct"
+
 
 # API endpoints
 @app.get("/api/statuses")
@@ -370,6 +386,10 @@ async def get_all_users():
                               ORDER BY id
                               """).fetchall()
         return [dict(row) for row in rows]
+
+# Frontend serve after apis
+dist_path = os.path.join(os.path.dirname(__file__), 'dist')
+app.mount("/", StaticFiles(directory=dist_path, html=True), name="frontend")
 
 if __name__ == "__main__":
     import uvicorn

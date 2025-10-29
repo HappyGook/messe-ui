@@ -28,8 +28,9 @@ function Confirm(){
     return(
         <div>
             <h2>{name}, bist Du bereit? Dann drucke den Buzzer zum Starten!</h2>
-            <button className="submit-button" onClick={()=>navigate("/stopwatch")}><span>(Buzzer) Starten!</span></button>
-
+            {/* IF BUTTON NEEDED
+               <button className="submit-button" onClick={()=>navigate("/stopwatch")}><span>(Buzzer) Starten!</span></button>
+           */}
             {status && <p style={{ color: "green" }}> Bereit! Starte...</p>}
         </div>
     )

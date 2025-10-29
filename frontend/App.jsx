@@ -1,4 +1,4 @@
-import schnoorLogo from '../assets/schnoor.svg'
+import schnoorLogo from './assets/schnoor.svg'
 import {BrowserRouter, Routes, Route} from 'react-router-dom'
 import {UserProvider} from "./UserProvider.jsx";
 import './App.css'
@@ -9,7 +9,7 @@ import CountDown from "./watches/CountDown.jsx";
 import LeaderBoard from "./leaderboards/LeaderBoard.jsx";
 import LeaderAll from "./leaderboards/LeaderAll.jsx";
 import Admin from "./Admin.jsx";
-import anglePic from "../assets/angle.png";
+import anglePic from "./assets/angle.png";
 
 function App() {
 

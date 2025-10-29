@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "frontend": "vite",
-    "backend": ".venv\\Scripts\\python src/backend/frontend_test_server.py",
+    "backend": ".venv\\Scripts\\python backend/frontend_test_server.py",
     "dev": "concurrently \"npm run frontend\" \"npm run backend\"",
     "build": "vite build",
     "lint": "eslint .",

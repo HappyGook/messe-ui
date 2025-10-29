@@ -1,5 +1,8 @@
+import os
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List
 from db import db
@@ -192,6 +195,10 @@ async def get_all_users():
                               ORDER BY id
                               """).fetchall()
         return [dict(row) for row in rows]
+
+# Frontend serve after apis
+dist_path = os.path.join(os.path.dirname(__file__), 'dist')
+app.mount("/", StaticFiles(directory=dist_path, html=True), name="frontend")
 
 if __name__ == "__main__":
     import uvicorn
