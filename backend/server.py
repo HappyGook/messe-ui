@@ -181,14 +181,11 @@ def buzzer_polling():
                 buzzer_clicked = True
             elif current_state == 0:
                 print("[BUZZER] Falling edge detected -> Button RELEASED")
-                # Option 1: reset flag automatically here
-                # buzzer_clicked = False
-                # Option 2: leave it to /api/buzzer to reset
-                print(f"[BUZZER] Current buzzer_clicked flag: {buzzer_clicked}")
+                buzzer_clicked = False
+                print(f"[BUZZER] buzzer_clicked reset to False on release")
 
             last_state = current_state
 
-        # Log every few seconds to see if state sticks
         time.sleep(0.05)
 
 
