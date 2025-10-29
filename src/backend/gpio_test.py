@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 # ----------------------
 # GPIO setup
 # ----------------------
-# Common usable GPIO pins on most Raspberry Pi models (BCM numbering)
 ALL_GPIO_PINS = [2, 3, 4, 5, 6, 7,
                  12, 13, 14, 15, 16, 18, 19,
                  20, 21, 22, 23, 24, 26, 27]
@@ -31,17 +30,19 @@ def setup_pins():
             logger.warning(f"Skipping pin {pin}: {e}")
     logger.info("Initialized GPIO pins: %s", ALL_GPIO_PINS)
 
-def test_pins():
-    """Turn on each pin for 2 seconds, then off."""
-    for pin in ALL_GPIO_PINS:
-        try:
-            logger.info(f"Setting GPIO {pin} HIGH")
+def test_all_pins():
+    """Turn all pins HIGH for 2s, then LOW."""
+    try:
+        logger.info("Turning ALL GPIO pins HIGH")
+        for pin in ALL_GPIO_PINS:
             GPIO.output(pin, GPIO.HIGH)
-            time.sleep(2)
-            logger.info(f"Setting GPIO {pin} LOW")
+        time.sleep(2)
+
+        logger.info("Turning ALL GPIO pins LOW")
+        for pin in ALL_GPIO_PINS:
             GPIO.output(pin, GPIO.LOW)
-        except Exception as e:
-            logger.error(f"Error testing pin {pin}: {e}")
+    except Exception as e:
+        logger.error(f"Error toggling pins: {e}")
 
 def cleanup():
     """Reset all pins on exit."""
@@ -55,7 +56,7 @@ if __name__ == "__main__":
     try:
         setup_pins()
         while True:
-            test_pins()
+            test_all_pins()
             logger.info("Cycle complete. Restarting...\n")
             time.sleep(1)
 
