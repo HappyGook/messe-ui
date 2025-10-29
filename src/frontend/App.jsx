@@ -9,11 +9,14 @@ import CountDown from "./watches/CountDown.jsx";
 import LeaderBoard from "./leaderboards/LeaderBoard.jsx";
 import LeaderAll from "./leaderboards/LeaderAll.jsx";
 import Admin from "./Admin.jsx";
+import anglePic from "../assets/angle.png";
 
 function App() {
 
     return (
     <>
+        <img src={anglePic} alt="Corner Decoration" className="angle-image" />
+
       <div>
           <img src={schnoorLogo} className="logo schnoor" alt="Schnoor Logo"></img>
       </div>

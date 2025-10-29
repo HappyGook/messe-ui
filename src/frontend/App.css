@@ -33,6 +33,18 @@ p, a, button, input, textarea, select, label, th, td, span, div {
   transition: filter 300ms;
 }
 
+.angle-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  width: auto;
+  height: auto;
+  max-width: 250px;
+  z-index: 1000; /* stays above everything */
+}
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #0E71B5);
 }
