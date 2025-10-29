@@ -89,7 +89,7 @@ function Stopwatch() {
 
                 // Example victory condition: all satellites are "done"
                 const victoryAchieved = Object.values(statuses)
-                    .some(status => status === "correct"); // adjust condition
+                    .every(status => status === "correct"); // adjust condition
 
                 if (victoryAchieved) {
                     handleClick();
