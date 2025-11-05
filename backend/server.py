@@ -364,9 +364,10 @@ async def get_leaderboard():
                             SELECT id, name, time, created_at
                             FROM users
                             ORDER BY (
-                                         CAST(substr(time, 1, 2) AS INTEGER) * 60000 +  -- minutes to milliseconds
-                                         CAST(substr(time, 4, 2) AS INTEGER) * 1000 +   -- seconds to milliseconds  
-                                         CAST(substr(time, 7, 3) AS INTEGER)            -- milliseconds
+                                         CAST(substr(time, 1, 2) AS INTEGER) * 3600000 +   -- hours to milliseconds
+                                         CAST(substr(time, 4, 2) AS INTEGER) * 60000 +     -- minutes to milliseconds  
+                                         CAST(substr(time, 7, 2) AS INTEGER) * 1000 +      -- seconds to milliseconds
+                                         CAST(substr(time, 10, 3) AS INTEGER)              -- milliseconds
                                          ) ASC
                             """).fetchall()
         return [dict(row) for row in rows]
@@ -378,9 +379,10 @@ async def get_all_leaders():
                             SELECT id, name, time, created_at
                             FROM all_scores
                             ORDER BY (
-                                         CAST(substr(time, 1, 2) AS INTEGER) * 60000 +  -- minutes to milliseconds
-                                         CAST(substr(time, 4, 2) AS INTEGER) * 1000 +   -- seconds to milliseconds  
-                                         CAST(substr(time, 7, 3) AS INTEGER)            -- milliseconds
+                                         CAST(substr(time, 1, 2) AS INTEGER) * 3600000 +   -- hours to milliseconds
+                                         CAST(substr(time, 4, 2) AS INTEGER) * 60000 +     -- minutes to milliseconds  
+                                         CAST(substr(time, 7, 2) AS INTEGER) * 1000 +      -- seconds to milliseconds
+                                         CAST(substr(time, 10, 3) AS INTEGER)              -- milliseconds
                                          ) ASC
                             """).fetchall()
         return [dict(row) for row in rows]
