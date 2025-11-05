@@ -376,7 +376,7 @@ async def get_all_leaders():
     with db.get_connection() as conn:
         rows = conn.execute("""
                             SELECT id, name, time, created_at
-                            FROM users
+                            FROM all_scores
                             ORDER BY (
                                          CAST(substr(time, 1, 2) AS INTEGER) * 60000 +  -- minutes to milliseconds
                                          CAST(substr(time, 4, 2) AS INTEGER) * 1000 +   -- seconds to milliseconds  
