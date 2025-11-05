@@ -266,7 +266,7 @@ async def buzzer_polling():
                 print("[BUZZER] Rising edge detected -> Button PRESSED")
                 buzzer_clicked = True
                 # Reset and start a new game
-                asyncio.run(reset_all_satellites())
+                await reset_all_satellites()  # await instead of asyncio.run
                 global game_active
                 game_active = True
                 await asyncio.gather(*(notify_satellite_unlock(i) for i in range(1, 5)))
@@ -278,7 +278,7 @@ async def buzzer_polling():
 
             last_state = current_state
 
-        time.sleep(0.05)
+        await asyncio.sleep(0.05)  # await asyncio.sleep instead of time.sleep
 
 
 # start-up event starts NFC reading
@@ -287,7 +287,9 @@ async def startup_event():
     setup_buzzer()
     threading.Thread(target=read_nfc, daemon=True).start()
     threading.Thread(target=local_nfc_processor, daemon=True).start()
-    threading.Thread(target=buzzer_polling, daemon=True).start()
+
+    # Create the buzzer polling task
+    asyncio.create_task(buzzer_polling())
 
 @app.on_event("shutdown")
 async def shutdown_event():
