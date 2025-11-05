@@ -154,11 +154,11 @@ function Stopwatch() {
                 :<span>{String(seconds).padStart(2,'0')}</span>
                 .<span>{Math.round(milliseconds/10)}</span>
             </div>
-            /* IF BUTTON NEEDED
+            {/* IF BUTTON NEEDED
             <button className="submit-button" onClick={handleClick}>
                 <span>(Buzzer) Fertig!</span>
             </button>
-            */
+            */}
         </div>
     );
 }
