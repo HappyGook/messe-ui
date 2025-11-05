@@ -6,7 +6,7 @@ import { useUser } from "../UserContext.jsx";
 import useSound from 'use-sound';
 import victorySound from '../sounds/victory.mp3';
 import tickingSound from '../sounds/ticking.mp3';
-import { useEffect, useRef } from "react";
+import {useCallback, useEffect, useRef} from "react";
 import { showConfetti } from './Confetti.jsx';
 
 function Stopwatch() {
@@ -33,11 +33,47 @@ function Stopwatch() {
         pause,
     } = useStopwatch({ autoStart: true, interval: 20 });
 
-    function formatTime({minutes, seconds, milliseconds}){
+    const formatTime = useCallback(({minutes, seconds, milliseconds}) => {
         const pad = (num, size=2) => String(num).padStart(size, '0');
         const ms = String(milliseconds).padStart(3, '0');
         return `00:${pad(minutes)}:${pad(seconds)}.${ms}`;
-    }
+    }, []);
+
+    const handleVictory = useCallback(async () => {
+        if (victoryTriggered.current) return;
+        victoryTriggered.current = true;
+
+        pause();
+        stopTicking();
+        playVictory();
+        showConfetti();
+
+        const time = formatTime({minutes, seconds, milliseconds});
+        console.log("[FRONTEND] Saving time:", time);
+
+        try {
+            const response = await fetch("/api/save", {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, time })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                console.error('Server error:', errorData);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('Save successful:', result);
+
+            setTimeout(() => {
+                navigate("/leaderboard");
+            }, 3000);
+        } catch (e) {
+            console.error("[FRONTEND] Problem beim speichern: ", e);
+        }
+    }, [formatTime, milliseconds, minutes, seconds, name, navigate, pause, playVictory, stopTicking]);
 
     // Name und Zeit nach Backend schicken
     async function handleClick() {
@@ -78,33 +114,30 @@ function Stopwatch() {
         }
     }
 
-    // Polling the server for victory status
     useEffect(() => {
         const interval = setInterval(async () => {
             try {
                 const response = await fetch("/api/statuses");
                 if (!response.ok) throw new Error('Failed to fetch statuses');
-
                 const statuses = await response.json();
 
-                // Log all statuses
                 console.log("[FRONTEND] Current statuses:", statuses);
 
-                // Victory condition: all satellites are "correct"
                 const victoryAchieved = Object.values(statuses)
                     .every(status => status === "correct");
 
                 if (victoryAchieved) {
-                    console.log("[FRONTEND] Victory achieved!");
-                    handleClick();
+                    clearInterval(interval);
+                    handleVictory();
                 }
             } catch (e) {
                 console.error("Error fetching statuses:", e);
             }
-        }, 500); // 0.5 sec
+        }, 500);
 
         return () => clearInterval(interval);
-    }, []); // run once on mount
+    }, [handleVictory]);
+
 
     return (
         <div style={{textAlign: 'center'}}>
@@ -114,13 +147,11 @@ function Stopwatch() {
                 :<span>{String(seconds).padStart(2,'0')}</span>
                 .<span>{Math.round(milliseconds/10)}</span>
             </div>
-            {/* IF BUTTON NEEDED
+            /* IF BUTTON NEEDED
             <button className="submit-button" onClick={handleClick}>
-
                 <span>(Buzzer) Fertig!</span>
-
             </button>
-            */}
+            */
         </div>
     );
 }
