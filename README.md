@@ -26,12 +26,15 @@
 -[x] Zeitformatierung
   - Wurde gemacht, auf der Stoppuhr Seite sichtbar
 
--[] Blinken zu leuchten + resetting
+-[x] Blinken zu leuchten
  
--[] Zeiten in Highscore nach Bundeln
+-[] Zeiten in Highscore nach Bundeln werden nicht angezeigt
+
+-[] Spiel reset besser umsetzen
 
 -[] ?? Nur wenn 5 drauf leuchten
 
--[] Spiel reset 
 
+Server & satellite lock implement
 
+Frontend stopwatch not sending api request fix

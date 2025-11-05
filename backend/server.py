@@ -2,7 +2,6 @@ import asyncio
 import os
 import threading
 import time
-
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +15,7 @@ import RPi.GPIO as GPIO
 
 app = FastAPI()
 led = LEDController()
+led_lock = threading.Lock()
 
 # Configure CORS
 app.add_middleware(
@@ -48,6 +48,7 @@ CORRECT_ID = "584194412400"
 
 BUZZER_PIN = 17
 buzzer_clicked = False  # short-lived event flag
+game_active = False # flag for game loop
 
 all_statuses_initialized = False
 
@@ -89,6 +90,10 @@ class RemoteNFC(BaseModel):
 async def receive_remote(remote: RemoteNFC):
     global all_statuses_initialized
 
+    if not game_active:
+        print(f"[HUB] Ignoring {remote.satellite} update (game not active)")
+        return {"message": "Game not active"}
+
     if remote.satellite not in statuses:
         print(f"[HUB] Unknown satellite: {remote.satellite}")
         return {"message": "Unknown satellite"}
@@ -115,7 +120,7 @@ def local_nfc_processor():
     while True:
         current_read = nfc_state.get_reading()
         current_id = current_read.get("id")
-        if current_id and current_id != last_id:
+        if game_active and current_id and current_id != last_id:
             status = check_nfc_id(current_id)
             statuses["local"] = status
             print(f"[HUB] Local reader -> {status}")
@@ -138,15 +143,13 @@ async def evaluate_and_trigger():
 
     # --- Local LED ---
     local_status = statuses.get("local")
-    if local_status == "correct":
-        local_color = (0, 1, 0)
-    elif local_status == "wrong":
-        local_color = (1, 0, 0)
-    else:
-        local_color = (0, 0, 0)  # keep off if unknown
-
-    loop = asyncio.get_event_loop()
-    loop.run_in_executor(None, led.blink_color, local_color, 0.5, 3)
+    with led_lock:
+        if local_status == "correct":
+            led.set_color((0, 1, 0))
+        elif local_status == "wrong":
+            led.set_color((1, 0, 0))
+        else:
+            led.turn_off()
 
     # --- Satellite LEDs ---
     async def trigger_satellite(name: str, i: int):
@@ -177,29 +180,28 @@ async def evaluate_and_trigger():
         async def reset_game_state():
             await asyncio.sleep(3)
 
+            global game_active
+            game_active = False
+            await asyncio.gather(*(lock_satellite(i) for i in range(1, 5)))
+            print("[GAME] All correct — game locked and waiting for next start")
+
             # Reset in-memory statuses for a fresh game
             for key in statuses:
                 statuses[key] = None
 
             # Notify satellites to reset last_processed_id so repeated tags are recognized
-            async def notify_satellite_reset(i: int):
-                url = f"http://stl{i}.local:8080/api/reset"
-                try:
-                    async with httpx.AsyncClient(timeout=2.0) as client:
-                        await client.get(url)
-                        print(f"[HUB] Notified stl{i} to reset last_processed_id")
-                except Exception as e:
-                    print(f"[HUB] Failed to notify stl{i}: {e}")
-
             await asyncio.gather(*(notify_satellite_reset(i) for i in range(1, 5)))
 
             # Reset global flag to allow next game
             global all_statuses_initialized
             all_statuses_initialized = False
 
-            print("[HUB] Game state fully reset, ready for next round")
+            with led_lock:
+                led.turn_off()
 
-        asyncio.create_task(reset_game_state())
+    print("[HUB] Game state fully reset, ready for next round")
+
+    asyncio.create_task(reset_game_state())
 
 def setup_buzzer():
     GPIO.setmode(GPIO.BCM)
@@ -209,18 +211,38 @@ def setup_buzzer():
 def buzzer_pressed(channel):
     print("[BUZZER] Button pressed (pin 15 -> LOW)")
 
+# Unlock all satellites for the new game
+async def notify_satellite_unlock(i: int):
+    url = f"http://stl{i}.local:8080/api/unlock"
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            await client.get(url)
+            print(f"[HUB] Unlocked stl{i}")
+    except Exception as e:
+        print(f"[HUB] Failed to unlock stl{i}: {e}")
+
+async def lock_satellite(i: int):
+    url = f"http://stl{i}.local:8080/api/lock"
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            await client.get(url)
+            print(f"[HUB] Locked stl{i}")
+    except Exception as e:
+        print(f"[HUB] Failed to lock stl{i}: {e}")
+
+
+async def notify_satellite_reset(i: int):
+    url = f"http://stl{i}.local:8080/api/reset"
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            await client.get(url)
+            print(f"[HUB] Notified stl{i} to reset last_processed_id")
+    except Exception as e:
+        print(f"[HUB] Failed to notify stl{i}: {e}")
+
 async def reset_all_satellites():
     """Notify all satellites to reset their state."""
     print("[HUB] Resetting all satellites for new game...")
-
-    async def notify_satellite_reset(i: int):
-        url = f"http://stl{i}.local:8080/api/reset"
-        try:
-            async with httpx.AsyncClient(timeout=2.0) as client:
-                await client.get(url)
-                print(f"[HUB] Notified stl{i} to reset last_processed_id")
-        except Exception as e:
-            print(f"[HUB] Failed to notify stl{i}: {e}")
 
     await asyncio.gather(*(notify_satellite_reset(i) for i in range(1, 5)))
 
@@ -231,7 +253,7 @@ async def reset_all_satellites():
     all_statuses_initialized = False
     print("[HUB] Local statuses cleared and ready for new game")
 
-def buzzer_polling():
+async def buzzer_polling():
     global buzzer_clicked
     last_state = GPIO.input(BUZZER_PIN)
     print(f"[BUZZER] Starting poll. Initial state: {last_state}")
@@ -243,7 +265,12 @@ def buzzer_polling():
             if current_state == 1:
                 print("[BUZZER] Rising edge detected -> Button PRESSED")
                 buzzer_clicked = True
+                # Reset and start a new game
                 asyncio.run(reset_all_satellites())
+                global game_active
+                game_active = True
+                await asyncio.gather(*(notify_satellite_unlock(i) for i in range(1, 5)))
+                print("[GAME] Game unlocked — NFC reads enabled!")
             elif current_state == 0:
                 print("[BUZZER] Falling edge detected -> Button RELEASED")
                 buzzer_clicked = False

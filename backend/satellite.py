@@ -21,6 +21,9 @@ app = FastAPI()
 # =====================
 # NFC Logic
 # =====================
+
+game_active = False # game loop flag
+
 def check_nfc_id(nfc_id: str):
     """Check NFC ID and return classification."""
     if not nfc_id:
@@ -40,7 +43,7 @@ def nfc_processor():
         current_read = nfc_state.get_reading()
         current_id = current_read.get("id")
 
-        if current_id and current_id != last_processed_id:
+        if game_active and current_id and current_id != last_processed_id:
             status = check_nfc_id(current_id)
 
             print(f"[{SATELLITE_ID}] Detected {status.upper()} ID: {current_id}")
@@ -81,6 +84,22 @@ async def red_led():
 async def green_led():
     led.set_color((0, 1, 0))  # constant green
     return {"message": "Green LED on"}
+
+@app.get("/api/unlock")
+async def unlock_game():
+    global game_active
+    game_active = True
+    print(f"[{SATELLITE_ID}] Game unlocked — ready to read NFCs")
+    return {"message": "Game unlocked"}
+
+@app.get("/api/lock")
+async def lock_game():
+    global game_active
+    game_active = False
+    print(f"[{SATELLITE_ID}] Game locked — NFCs ignored")
+    led.turn_off()
+    return {"message": "Game locked"}
+
 
 # =====================
 # Satellite reset endpoint
