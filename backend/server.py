@@ -186,7 +186,6 @@ async def evaluate_and_trigger():
     # --- Reset game state after victory ---
     if all(status == "correct" for status in statuses.values()):
         async def reset_game_state():
-            await asyncio.sleep(3)
 
             global game_active
             game_active = False
