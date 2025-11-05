@@ -1,0 +1,44 @@
+{
+  "_howler-BqKfHsTw.js": {
+    "file": "assets/howler-BqKfHsTw.js",
+    "name": "howler",
+    "isDynamicEntry": true,
+    "imports": [
+      "index.html"
+    ]
+  },
+  "assets/angle.png": {
+    "file": "assets/angle-ajRubb-s.png",
+    "src": "assets/angle.png"
+  },
+  "assets/schnoor.svg": {
+    "file": "assets/schnoor-BUv3c8Z3.svg",
+    "src": "assets/schnoor.svg"
+  },
+  "index.html": {
+    "file": "assets/index-bOvDPH9z.js",
+    "name": "index",
+    "src": "index.html",
+    "isEntry": true,
+    "dynamicImports": [
+      "_howler-BqKfHsTw.js"
+    ],
+    "css": [
+      "assets/index-BuvymGg6.css"
+    ],
+    "assets": [
+      "assets/schnoor-BUv3c8Z3.svg",
+      "assets/victory-dFjWLsJk.mp3",
+      "assets/ticking-CqD7YHiF.mp3",
+      "assets/angle-ajRubb-s.png"
+    ]
+  },
+  "sounds/ticking.mp3": {
+    "file": "assets/ticking-CqD7YHiF.mp3",
+    "src": "sounds/ticking.mp3"
+  },
+  "sounds/victory.mp3": {
+    "file": "assets/victory-dFjWLsJk.mp3",
+    "src": "sounds/victory.mp3"
+  }
+}
