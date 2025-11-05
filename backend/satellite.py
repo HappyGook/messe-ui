@@ -98,18 +98,22 @@ async def green_led():
 async def unlock_game():
     global game_active
 
-    # Clear everything before starting game
-    print(f"[{SATELLITE_ID}] Clearing state for new game")
+    # Clear NFC state completely
+    nfc_state.last_read = {"id": None, "timestamp": None}
 
     game_active = True
     led.turn_off()  # Clear LED state
-    print(f"[{SATELLITE_ID}] Game unlocked — ready to read NFCs")
+    print(f"[{SATELLITE_ID}] Game unlocked — NFC state cleared and ready to read NFCs")
     return {"message": "Game unlocked"}
 
 @app.get("/api/lock")
 async def lock_game():
     global game_active
     game_active = False
+
+    # Clear NFC state completely
+    nfc_state.last_read = {"id": None, "timestamp": None}
+
     led.turn_off()
     print(f"[{SATELLITE_ID}] Game locked — NFCs ignored")
     return {"message": "Game locked"}
@@ -117,9 +121,13 @@ async def lock_game():
 @app.get("/api/reset")
 async def reset_satellite():
     """Reset the satellite state after a game"""
+
+    # Clear NFC state completely
+    nfc_state.last_read = {"id": None, "timestamp": None}
+
     # Turn off local LED
     led.turn_off()
-    print(f"[{SATELLITE_ID}] Satellite reset completed")
+    print(f"[{SATELLITE_ID}] Satellite reset completed - NFC state cleared")
     return {"message": f"{SATELLITE_ID} reset successful"}
 
 # =====================

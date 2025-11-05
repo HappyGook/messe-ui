@@ -278,6 +278,10 @@ async def buzzer_polling():
 
                 # Clear everything before starting new game
                 print("[GAME] Clearing all statuses and states for new game...")
+
+                # Clear server-side NFC state
+                nfc_state.last_read = {"id": None, "timestamp": None}
+
                 for key in statuses:
                     statuses[key] = None
                 global all_statuses_initialized
