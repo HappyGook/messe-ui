@@ -43,7 +43,7 @@ def nfc_processor():
         current_read = nfc_state.get_reading()
         current_id = current_read.get("id")
 
-        if game_active and current_id and current_id != last_processed_id:
+        if game_active and current_id:
             status = check_nfc_id(current_id)
 
             print(f"[{SATELLITE_ID}] Detected {status.upper()} ID: {current_id}")
@@ -62,8 +62,6 @@ def nfc_processor():
                 print(f"[{SATELLITE_ID}] Sent result to hub")
             except Exception as e:
                 print(f"[{SATELLITE_ID}] Failed to send to hub: {e}")
-
-            last_processed_id = current_id
 
         time.sleep(0.1)
 

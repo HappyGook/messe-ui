@@ -101,38 +101,46 @@ async def receive_remote(remote: RemoteNFC):
     statuses[remote.satellite] = remote.status
     print(f"[HUB] Updated {remote.satellite} -> {remote.status}")
 
+    # Always trigger evaluation when we have a status update
     if all(value is not None for value in statuses.values()):
         if not all_statuses_initialized:
-            # First time all statuses are available
             all_statuses_initialized = True
-            asyncio.create_task(evaluate_and_trigger())
-        else:
-            # Evaluate every update after first as well
-            asyncio.create_task(evaluate_and_trigger())
+
+        asyncio.create_task(evaluate_and_trigger())
 
     return {"message": "Status updated"}
 
 
 def local_nfc_processor():
-    last_id = None
     global all_statuses_initialized
 
     while True:
+        if not game_active:
+            time.sleep(0.1)
+            continue
+
         current_read = nfc_state.get_reading()
         current_id = current_read.get("id")
-        if game_active and current_id and current_id != last_id:
+
+        if current_id:
             status = check_nfc_id(current_id)
             statuses["local"] = status
             print(f"[HUB] Local reader -> {status}")
-            last_id = current_id
 
-            # Trigger LEDs if all statuses known
+            # Always trigger evaluation when we have a status update
             if all(value is not None for value in statuses.values()):
                 if not all_statuses_initialized:
                     all_statuses_initialized = True
-                    asyncio.run(evaluate_and_trigger())
-                else:
-                    asyncio.run(evaluate_and_trigger())
+
+                # Create a new event loop for this thread to run async code
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(evaluate_and_trigger())
+                    loop.close()
+                except Exception as e:
+                    print(f"[NFC] Error running evaluate_and_trigger: {e}")
+
         time.sleep(0.1)
 
 
