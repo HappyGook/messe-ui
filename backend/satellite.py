@@ -38,15 +38,24 @@ def check_nfc_id(nfc_id: str):
 
 def nfc_processor():
     """Continuously poll NFC reader and send all detections to hub when game is active."""
+    game_start_time = None
+
     while True:
         if not game_active:
+            game_start_time = None  # Reset when game is not active
             time.sleep(0.1)
             continue
+
+        # Track when game just started
+        if game_start_time is None:
+            game_start_time = time.time()
 
         current_read = nfc_state.get_reading()
         current_id = current_read.get("id")
 
-        if current_id:
+        # Only process IDs if game has been active for at least 2 seconds
+        # This prevents immediate processing of cards already on readers
+        if current_id and (time.time() - game_start_time) > 2:
             status = check_nfc_id(current_id)
             print(f"[{SATELLITE_ID}] Detected {status.upper()} ID: {current_id}")
 
