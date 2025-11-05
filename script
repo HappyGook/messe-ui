@@ -1,28 +1,89 @@
 #!/bin/bash
 
-# List of satellites
+# ==============================
+# CONFIG
+# ==============================
 SATELLITES=("stl1.local" "stl2.local" "stl3.local" "stl4.local")
 PASSWORD="1234"
+REMOTE_PATH="~/Documents/messe-ui/backend"
 
-# Function to start satellite
+# ==============================
+# FUNCTIONS
+# ==============================
+
+# Kill running Python processes on a satellite
+cleanup_satellite() {
+    local host=$1
+    echo "[CLEANUP] Killing Python processes on $host..."
+    sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no oleg77@"$host" "pkill -f python3 || true"
+}
+
+# Kill running Python processes locally
+cleanup_local() {
+    echo "[CLEANUP] Killing local Python processes..."
+    pkill -f python3 || true
+}
+
+# Start a satellite
 start_satellite() {
     local host=$1
-    sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no oleg77@"$host" << 'EOF'
-cd ~/Documents/messe-ui/backend
+    echo "[START] Launching satellite on $host..."
+    sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no oleg77@"$host" << EOF
+cd $REMOTE_PATH
 source .venv/bin/activate
-python3 satellite.py
+nohup python3 satellite.py > satellite.log 2>&1 &
 EOF
 }
 
-# Start satellites in background
+# Handler for Ctrl+C or termination
+handle_interrupt() {
+    echo ""
+    echo "=============================="
+    echo "[INTERRUPT] Caught signal, cleaning up..."
+    echo "=============================="
+
+    for sat in "${SATELLITES[@]}"; do
+        cleanup_satellite "$sat" &
+    done
+    cleanup_local
+    wait
+    echo "[DONE] All processes stopped."
+    exit 0
+}
+
+# ==============================
+# MAIN SCRIPT
+# ==============================
+
+# Trap Ctrl+C (SIGINT) and termination signals
+trap handle_interrupt SIGINT SIGTERM
+
+echo "=============================="
+echo "[STARTUP] Cleaning all existing processes..."
+echo "=============================="
+
+# Clean up everything before starting
+for sat in "${SATELLITES[@]}"; do
+    cleanup_satellite "$sat" &
+done
+cleanup_local
+wait
+
+# Start satellites
+echo "=============================="
+echo "[STARTUP] Starting satellites..."
+echo "=============================="
+
 for sat in "${SATELLITES[@]}"; do
     start_satellite "$sat" &
 done
-
-# Wait a bit for all satellites to start
-sleep 2
+wait
 
 # Start server locally
+echo "=============================="
+echo "[STARTUP] Starting main server..."
+echo "=============================="
+
 cd ~/Documents/messe-ui/backend
 source .venv/bin/activate
 python3 server.py
