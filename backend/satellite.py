@@ -35,14 +35,15 @@ def check_nfc_id(nfc_id: str):
     else:
         return "wrong"
 
-
 def nfc_processor():
-    """Continuously poll NFC reader and send all detections to hub when game is active."""
+    """Continuously poll NFC reader and send new detections to hub when game is active."""
     game_start_time = None
+    last_sent_id = None  # Track what ID we last sent to avoid duplicate requests
 
     while True:
         if not game_active:
-            game_start_time = None  # Reset when game is not active
+            game_start_time = None
+            last_sent_id = None  # Reset when game becomes inactive
             time.sleep(0.1)
             continue
 
@@ -53,26 +54,48 @@ def nfc_processor():
         current_read = nfc_state.get_reading()
         current_id = current_read.get("id")
 
-        # Only process IDs if game has been active for at least 2 seconds
-        # This prevents immediate processing of cards already on readers
-        if current_id and (time.time() - game_start_time) > 2:
-            status = check_nfc_id(current_id)
-            print(f"[{SATELLITE_ID}] Detected {status.upper()} ID: {current_id}")
+        # Only process if we're past the grace period and ID has changed
+        if (time.time() - game_start_time) > 0.5 and current_id != last_sent_id:
 
-            # send to hub
-            try:
-                requests.post(
-                    HUB_URL,
-                    json={
-                        "satellite": SATELLITE_ID,
-                        "id": current_id,
-                        "status": status
-                    },
-                    timeout=2
-                )
-                print(f"[{SATELLITE_ID}] Sent result to hub")
-            except Exception as e:
-                print(f"[{SATELLITE_ID}] Failed to send to hub: {e}")
+            if current_id:
+                # New card detected
+                status = check_nfc_id(current_id)
+                print(f"[{SATELLITE_ID}] New ID detected: {status.upper()} - {current_id}")
+
+                # Send to hub
+                try:
+                    requests.post(
+                        HUB_URL,
+                        json={
+                            "satellite": SATELLITE_ID,
+                            "id": current_id,
+                            "status": status
+                        },
+                        timeout=2
+                    )
+                    print(f"[{SATELLITE_ID}] Sent new status to hub: {status}")
+                    last_sent_id = current_id
+                except Exception as e:
+                    print(f"[{SATELLITE_ID}] Failed to send to hub: {e}")
+
+            elif last_sent_id is not None:
+                # Card was removed (current_id is None but we had sent something before)
+                print(f"[{SATELLITE_ID}] Card removed - clearing status")
+
+                try:
+                    requests.post(
+                        HUB_URL,
+                        json={
+                            "satellite": SATELLITE_ID,
+                            "id": None,
+                            "status": None
+                        },
+                        timeout=2
+                    )
+                    print(f"[{SATELLITE_ID}] Sent clear status to hub")
+                    last_sent_id = None
+                except Exception as e:
+                    print(f"[{SATELLITE_ID}] Failed to send clear status to hub: {e}")
 
         time.sleep(0.1)
 

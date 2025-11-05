@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from nfc_reader import nfc_state, read_nfc
 from db import db
 from led_controller import LEDController
@@ -83,8 +83,8 @@ class UserModify(BaseModel):
 # -----------------------
 class RemoteNFC(BaseModel):
     satellite: str  # e.g., 'stl1'
-    id: str
-    status: str     # 'correct', 'wrong'
+    id: Optional[str] = None
+    status: Optional[str] = None  # 'correct', 'wrong', or None
 
 @app.post("/api/remote")
 async def receive_remote(remote: RemoteNFC):
