@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# List of satellites
+SATELLITES=("stl1.local" "stl2.local" "stl3.local" "stl4.local")
+PASSWORD="1234"
+
+# Function to start satellite
+start_satellite() {
+    local host=$1
+    sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no oleg77@"$host" << 'EOF'
+cd ~/Documents/messe-ui/backend
+source .venv/bin/activate
+python3 satellite.py
+EOF
+}
+
+# Start satellites in background
+for sat in "${SATELLITES[@]}"; do
+    start_satellite "$sat" &
+done
+
+# Wait a bit for all satellites to start
+sleep 2
+
+# Start server locally
+cd ~/Documents/messe-ui/backend
+source .venv/bin/activate
+python3 server.py
