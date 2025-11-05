@@ -363,7 +363,11 @@ async def get_leaderboard():
         rows = conn.execute("""
                             SELECT id, name, time, created_at
                             FROM users
-                            ORDER BY id
+                            ORDER BY (
+                                         CAST(substr(time, 1, 2) AS INTEGER) * 60000 +  -- minutes to milliseconds
+                                         CAST(substr(time, 4, 2) AS INTEGER) * 1000 +   -- seconds to milliseconds  
+                                         CAST(substr(time, 7, 3) AS INTEGER)            -- milliseconds
+                                         ) ASC
                             """).fetchall()
         return [dict(row) for row in rows]
 
@@ -372,8 +376,12 @@ async def get_all_leaders():
     with db.get_connection() as conn:
         rows = conn.execute("""
                             SELECT id, name, time, created_at
-                            FROM all_scores
-                            ORDER BY id
+                            FROM users
+                            ORDER BY (
+                                         CAST(substr(time, 1, 2) AS INTEGER) * 60000 +  -- minutes to milliseconds
+                                         CAST(substr(time, 4, 2) AS INTEGER) * 1000 +   -- seconds to milliseconds  
+                                         CAST(substr(time, 7, 3) AS INTEGER)            -- milliseconds
+                                         ) ASC
                             """).fetchall()
         return [dict(row) for row in rows]
 
