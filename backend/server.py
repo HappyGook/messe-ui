@@ -140,9 +140,11 @@ def local_nfc_processor():
                     loop.close()
                 except Exception as e:
                     print(f"[NFC] Error running evaluate_and_trigger: {e}")
+        else:
+            # Clear local status when no card is present
+            statuses["local"] = None
 
         time.sleep(0.1)
-
 
 async def evaluate_and_trigger():
     """Check current statuses and trigger LEDs individually."""
@@ -186,29 +188,30 @@ async def evaluate_and_trigger():
     # --- Reset game state after victory ---
     if all(status == "correct" for status in statuses.values()):
         async def reset_game_state():
+            await asyncio.sleep(3)
 
             global game_active
             game_active = False
             await asyncio.gather(*(lock_satellite(i) for i in range(1, 5)))
             print("[GAME] All correct — game locked and waiting for next start")
 
-            # Reset in-memory statuses for a fresh game
+            # Clear everything after game ends
             for key in statuses:
                 statuses[key] = None
 
-            # Notify satellites to reset last_processed_id so repeated tags are recognized
+            # Notify satellites to reset everything
             await asyncio.gather(*(notify_satellite_reset(i) for i in range(1, 5)))
 
-            # Reset global flag to allow next game
+            # Reset global flag
             global all_statuses_initialized
             all_statuses_initialized = False
 
             with led_lock:
                 led.turn_off()
 
-    print("[HUB] Game state fully reset, ready for next round")
+            print("[HUB] Game state fully reset, ready for next round")
 
-    asyncio.create_task(reset_game_state())
+        asyncio.create_task(reset_game_state())
 
 def setup_buzzer():
     GPIO.setmode(GPIO.BCM)
@@ -272,20 +275,28 @@ async def buzzer_polling():
             if current_state == 1:
                 print("[BUZZER] Rising edge detected -> Button PRESSED")
                 buzzer_clicked = True
+
+                # Clear everything before starting new game
+                print("[GAME] Clearing all statuses and states for new game...")
+                for key in statuses:
+                    statuses[key] = None
+                global all_statuses_initialized
+                all_statuses_initialized = False
+
                 # Reset and start a new game
-                await reset_all_satellites()  # await instead of asyncio.run
+                await reset_all_satellites()
                 global game_active
                 game_active = True
                 await asyncio.gather(*(notify_satellite_unlock(i) for i in range(1, 5)))
                 print("[GAME] Game unlocked — NFC reads enabled!")
+
             elif current_state == 0:
                 print("[BUZZER] Falling edge detected -> Button RELEASED")
                 buzzer_clicked = False
-                print(f"[BUZZER] buzzer_clicked reset to False on release")
 
             last_state = current_state
 
-        await asyncio.sleep(0.05)  # await asyncio.sleep instead of time.sleep
+        await asyncio.sleep(0.05)
 
 
 # start-up event starts NFC reading

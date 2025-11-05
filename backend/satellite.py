@@ -37,15 +37,17 @@ def check_nfc_id(nfc_id: str):
 
 
 def nfc_processor():
-    """Continuously poll NFC reader and send new detections to hub."""
-    last_processed_id = None
+    """Continuously poll NFC reader and send all detections to hub when game is active."""
     while True:
+        if not game_active:
+            time.sleep(0.1)
+            continue
+
         current_read = nfc_state.get_reading()
         current_id = current_read.get("id")
 
-        if game_active and current_id:
+        if current_id:
             status = check_nfc_id(current_id)
-
             print(f"[{SATELLITE_ID}] Detected {status.upper()} ID: {current_id}")
 
             # send to hub
@@ -86,7 +88,12 @@ async def green_led():
 @app.get("/api/unlock")
 async def unlock_game():
     global game_active
+
+    # Clear everything before starting game
+    print(f"[{SATELLITE_ID}] Clearing state for new game")
+
     game_active = True
+    led.turn_off()  # Clear LED state
     print(f"[{SATELLITE_ID}] Game unlocked — ready to read NFCs")
     return {"message": "Game unlocked"}
 
@@ -94,36 +101,16 @@ async def unlock_game():
 async def lock_game():
     global game_active
     game_active = False
-    print(f"[{SATELLITE_ID}] Game locked — NFCs ignored")
     led.turn_off()
+    print(f"[{SATELLITE_ID}] Game locked — NFCs ignored")
     return {"message": "Game locked"}
 
-
-# =====================
-# Satellite reset endpoint
-# =====================
 @app.get("/api/reset")
 async def reset_satellite():
-    """
-    Reset the satellite state after a game:
-    - Turn off local LED
-    - Reset last processed NFC ID
-    - Reset local status
-    """
-    global last_processed_id
-    global local_status
-
-    # Reset the last processed NFC ID so repeated tags are sent again
-    last_processed_id = None
-
-    # Reset local status (if you use it)
-    local_status = None
-
+    """Reset the satellite state after a game"""
     # Turn off local LED
     led.turn_off()
-
     print(f"[{SATELLITE_ID}] Satellite reset completed")
-
     return {"message": f"{SATELLITE_ID} reset successful"}
 
 # =====================
