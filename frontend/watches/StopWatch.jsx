@@ -6,12 +6,13 @@ import { useUser } from "../UserContext.jsx";
 import useSound from 'use-sound';
 import victorySound from '../sounds/victory.mp3';
 import tickingSound from '../sounds/ticking.mp3';
-import {useCallback, useEffect, useRef} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import { showConfetti } from './Confetti.jsx';
 
 function Stopwatch() {
     const { name } = useUser();
     const navigate = useNavigate();
+    const [isVictoryAchieved, setIsVictoryAchieved] = useState(false);
     const [playVictory] = useSound(victorySound);
     const [playTicking, { stop: stopTicking }] = useSound(tickingSound, {
         interrupt: true,
@@ -128,15 +129,21 @@ function Stopwatch() {
 
                 if (victoryAchieved) {
                     clearInterval(interval);
-                    handleVictory();
+                    setIsVictoryAchieved(true);
                 }
             } catch (e) {
                 console.error("Error fetching statuses:", e);
             }
         }, 500);
-
         return () => clearInterval(interval);
-    }, [handleVictory]);
+    }, []); // Empty dependency array for polling
+
+    useEffect(() => {
+        if (isVictoryAchieved) {
+            handleVictory();
+        }
+    }, [isVictoryAchieved, handleVictory]);
+
 
 
     return (
