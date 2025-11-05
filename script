@@ -1,85 +1,74 @@
 #!/bin/bash
 
-# ==============================
+# =====================================
 # CONFIG
-# ==============================
+# =====================================
 SATELLITES=("stl1.local" "stl2.local" "stl3.local" "stl4.local")
 PASSWORD="1234"
 REMOTE_PATH="~/Documents/messe-ui/backend"
 
-# ==============================
+# =====================================
 # FUNCTIONS
-# ==============================
+# =====================================
 
-# Kill running Python processes on a satellite
-cleanup_satellite() {
+# Reboot satellite
+reboot_satellite() {
     local host=$1
-    echo "[CLEANUP] Killing Python processes on $host..."
-    sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no oleg77@"$host" "pkill -f python3 || true"
+    echo "[REBOOT] Rebooting $host..."
+    sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no oleg77@"$host" "sudo reboot" >/dev/null 2>&1 &
 }
 
-# Kill running Python processes locally
+# Kill python locally
 cleanup_local() {
     echo "[CLEANUP] Killing local Python processes..."
     pkill -f python3 || true
 }
 
-# Start a satellite
+# Start satellite (runs detached)
 start_satellite() {
     local host=$1
     echo "[START] Launching satellite on $host..."
-    sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no oleg77@"$host" << EOF
-cd $REMOTE_PATH
-source .venv/bin/activate
-nohup python3 satellite.py > satellite.log 2>&1 &
-EOF
+    sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no oleg77@"$host" "bash -lc '
+        cd $REMOTE_PATH
+        source .venv/bin/activate
+        nohup python3 satellite.py > satellite.log 2>&1 &
+    '" &
 }
 
-# Handler for Ctrl+C or termination
+# Handle interrupt (Ctrl+C or termination)
 handle_interrupt() {
     echo ""
     echo "=============================="
-    echo "[INTERRUPT] Caught signal, cleaning up..."
+    echo "[INTERRUPT] Caught signal, rebooting satellites..."
     echo "=============================="
 
     for sat in "${SATELLITES[@]}"; do
-        cleanup_satellite "$sat" &
+        reboot_satellite "$sat"
     done
     cleanup_local
-    wait
-    echo "[DONE] All processes stopped."
+    echo "[DONE] Reboot commands sent. Exiting..."
     exit 0
 }
 
-# ==============================
+# =====================================
 # MAIN SCRIPT
-# ==============================
+# =====================================
 
 # Trap Ctrl+C (SIGINT) and termination signals
 trap handle_interrupt SIGINT SIGTERM
 
 echo "=============================="
-echo "[STARTUP] Cleaning all existing processes..."
-echo "=============================="
-
-# Clean up everything before starting
-for sat in "${SATELLITES[@]}"; do
-    cleanup_satellite "$sat" &
-done
-cleanup_local
-wait
-
-# Start satellites
-echo "=============================="
 echo "[STARTUP] Starting satellites..."
 echo "=============================="
 
+# Start satellites
 for sat in "${SATELLITES[@]}"; do
-    start_satellite "$sat" &
+    start_satellite "$sat"
 done
-wait
 
-# Start server locally
+# Wait a few seconds before starting server
+sleep 2
+
 echo "=============================="
 echo "[STARTUP] Starting main server..."
 echo "=============================="
