@@ -1,6 +1,11 @@
+import math
+import threading
+
 from gpiozero import RGBLED
 import logging
 import time
+
+from backend.sat_config import SATELLITE_ID
 
 # ----------------------
 # Logging setup
@@ -15,11 +20,11 @@ logger = logging.getLogger(__name__)
 # LED configuration
 # ----------------------
 # Assign GPIO pins for single RGB LED per satellite
-# TODO: Decide which pins are LEDs on
 LED_PINS = {"red": 19, "green": 13, "blue": 26}
 
 class LEDController:
     def __init__(self):
+        self.idle_active = None
         try:
             self.led = RGBLED(
                 red=LED_PINS["red"],
@@ -63,6 +68,56 @@ class LEDController:
         if self.led:
             self.led.close()
             logger.info("LED cleaned up")
+
+    def start_idle_mode(self, start_timestamp):
+        self.idle_active = True
+        threading.Thread(target=self._idle_loop, args=(start_timestamp,), daemon=True).start()
+
+    def stop_idle_mode(self):
+        self.idle_active = False
+        self.turn_off()
+
+    def _idle_loop(self, start_ts):
+        # Idle mode constants
+        SWING = 30
+        OFF1 = 5
+        RUNNER = 60
+        OFF2 = 5
+        
+        CYCLE = SWING + OFF1 + RUNNER + OFF2   # = 100 seconds
+
+        while self.idle_active:
+            now = time.time()
+            t = (now - start_ts) % CYCLE
+
+            # 1: SWING (0–30)
+            if t < SWING:
+                level = (1 + math.sin(now * 2)) / 2  # smooth breathing
+                self.set_color((0, 0, level))
+
+            # 2: OFF (30–35)
+            elif t < SWING + OFF1:
+                self.turn_off()
+
+            # 3: RUNNER (35–95)
+            elif t < SWING + OFF1 + RUNNER:
+                phase = int((t - (SWING + OFF1)) % 10)  # 0–9
+
+                if phase < 5:
+                    active_index = phase
+                else:
+                    active_index = 9 - phase
+
+                if active_index == int(SATELLITE_ID[-1]):
+                    self.set_color((0, 0, 1))  # BLUE
+                else:
+                    self.turn_off()
+
+            # 4: OFF (95–100)
+            else:
+                self.turn_off()
+
+            time.sleep(0.05)  # 20 FPS
 
 
 # ----------------------

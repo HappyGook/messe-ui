@@ -1,10 +1,11 @@
 import os
-
+import time
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List
+from backend.led_controller import LEDController
 from db import db
 
 
@@ -12,6 +13,7 @@ from db import db
 app = FastAPI()
 
 buzzer_clicked = False
+led = LEDController()
 
 statuses = {
     "local": None,
@@ -54,10 +56,14 @@ class RemoteNFC(BaseModel):
 @app.post("/api/idle-start")
 async def idle_start():
     print("[IDLE] Server is starting the idle mode")
+    led.start_idle_mode(time.time())
+    return {"status": "idle_started"}
 
 @app.post("/api/idle-stop")
 async def idle_stop():
     print("[IDLE] Server is stopping the idle mode")
+    led.stop_idle_mode()
+    return {"status": "idle_stopped"}
 
 
 @app.post("/api/save")

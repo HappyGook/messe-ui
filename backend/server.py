@@ -332,13 +332,17 @@ async def set_statuses():
     statuses["stl4"]="correct"
 
 # API endpoints
-@app.get("/api/idle-start")
+@app.post("/api/idle-start")
 async def idle_start():
     print("[IDLE] Server is starting the idle mode")
+    led.start_idle_mode(time.time())
+    return {"status": "idle_started"}
 
-@app.get("/api/idle-stop")
+@app.post("/api/idle-stop")
 async def idle_stop():
     print("[IDLE] Server is stopping the idle mode")
+    led.stop_idle_mode()
+    return {"status": "idle_stopped"}
 
 @app.get("/api/statuses")
 async def get_statuses():
