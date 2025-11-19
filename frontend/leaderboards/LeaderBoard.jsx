@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import './LeaderBoard.css';
 import '../App.css'
 import {useNavigate} from 'react-router-dom'
-import { useUser } from "../UserContext.jsx";  // <-- import context
+import { useUser } from "../UserContext.jsx"; // <-- import context
+import {useIdleTimer} from "../useIdleTimer.jsx";
 
 
 function LeaderBoard() {
+    useIdleTimer()
     const [leaders, setLeaders] = useState([]);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);

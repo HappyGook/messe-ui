@@ -1,6 +1,6 @@
 {
-  "_howler-BqKfHsTw.js": {
-    "file": "assets/howler-BqKfHsTw.js",
+  "_howler-B1zfyXg3.js": {
+    "file": "assets/howler-B1zfyXg3.js",
     "name": "howler",
     "isDynamicEntry": true,
     "imports": [
@@ -16,12 +16,12 @@
     "src": "assets/schnoor.svg"
   },
   "index.html": {
-    "file": "assets/index-bOvDPH9z.js",
+    "file": "assets/index-BXpy5uE_.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
     "dynamicImports": [
-      "_howler-BqKfHsTw.js"
+      "_howler-B1zfyXg3.js"
     ],
     "css": [
       "assets/index-BuvymGg6.css"

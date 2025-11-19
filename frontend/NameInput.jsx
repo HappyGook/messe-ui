@@ -1,12 +1,12 @@
 import {useNavigate} from 'react-router-dom'
 import {useUser} from "./UserContext.jsx";
 import {useState} from "react";
-
+import { useIdleTimer } from "./useIdleTimer.jsx";
 
 
 
 export default function NameInput(){
-
+    useIdleTimer()
     const {name, setName}=useUser()
     const [error, setError] = useState(null);
     const navigate=useNavigate()

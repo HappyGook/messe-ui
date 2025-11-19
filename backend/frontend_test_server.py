@@ -51,6 +51,15 @@ class RemoteNFC(BaseModel):
     status: str     # 'correct', 'wrong', 'unknown'
 
 # API endpoints
+@app.post("/api/idle-start")
+async def idle_start():
+    print("[IDLE] Server is starting the idle mode")
+
+@app.post("/api/idle-stop")
+async def idle_stop():
+    print("[IDLE] Server is stopping the idle mode")
+
+
 @app.post("/api/save")
 async def save_user(user: UserSave):
     with db.get_connection() as conn:
