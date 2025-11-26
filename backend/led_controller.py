@@ -5,7 +5,7 @@ from gpiozero import RGBLED
 import logging
 import time
 
-from backend.sat_config import SATELLITE_ID
+from sat_config import SATELLITE_ID
 
 # ----------------------
 # Logging setup
