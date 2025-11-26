@@ -92,7 +92,7 @@ class LEDController:
 
             # 1: SWING (0–30)
             if t < SWING:
-                level = (1 + math.sin(now * 2)) / 2  # smooth breathing
+                level = (1 + math.sin(now * 4)) / 2  # smooth breathing
                 self.set_color((0, 0, level))
 
             # 2: OFF (30–35)
