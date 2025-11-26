@@ -1,0 +1,116 @@
+#!/bin/bash
+
+# =====================================
+# CONFIG
+# =====================================
+SATELLITES=("stl1.local" "stl2.local" "stl3.local" "stl4.local")
+PASSWORD="1234"
+REMOTE_PATH="~/Documents/messe-ui/backend"
+MAX_RETRIES=5
+
+# =====================================
+# FUNCTIONS
+# =====================================
+
+# Reboot satellite
+reboot_satellite() {
+    local host=$1
+    echo "[REBOOT] Rebooting $host..."
+    sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no oleg77@"$host" "sudo reboot" >/dev/null 2>&1 &
+}
+
+# Kill python locally
+cleanup_local() {
+    echo "[CLEANUP] Killing local Python processes..."
+    pkill -f python3 || true
+}
+
+# SSH with retry (exponential backoff)
+ssh_retry() {
+    local host=$1
+    local retries=0
+    local wait_time=1
+
+    until sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 oleg77@"$host" "echo OK" >/dev/null 2>&1; do
+        if (( retries >= MAX_RETRIES )); then
+            echo "[ERROR] Unable to reach $host after $retries attempts."
+            return 1
+        fi
+        echo "[RETRY] $host unreachable, retrying in $wait_time seconds..."
+        sleep $wait_time
+        (( wait_time *= 2 ))
+        (( retries++ ))
+    done
+    return 0
+}
+
+# Start satellite (detached)
+start_satellite() {
+    local host=$1
+    echo "[START] Launching satellite on $host..."
+    sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no oleg77@"$host" "bash -lc '
+        cd $REMOTE_PATH
+        source .venv/bin/activate
+        nohup python3 satellite.py > satellite.log 2>&1 &
+    '" &
+}
+
+# Handle cleanup on exit or interrupt
+handle_exit() {
+    echo ""
+    echo "=============================="
+    echo "[EXIT] Caught signal or exit, rebooting satellites and cleaning up..."
+    echo "=============================="
+
+    for sat in "${SATELLITES[@]}"; do
+        reboot_satellite "$sat"
+    done
+    cleanup_local
+}
+
+trap handle_exit SIGINT SIGTERM EXIT
+
+# =====================================
+# MAIN LOOP
+# =====================================
+while true; do
+    echo "=============================="
+    echo "[STARTUP] Checking satellite connectivity..."
+    echo "=============================="
+
+    # Check all satellites
+    all_ok=true
+    for sat in "${SATELLITES[@]}"; do
+        if ! ssh_retry "$sat"; then
+            all_ok=false
+        fi
+    done
+
+    if [ "$all_ok" = true ]; then
+        echo "[SUCCESS] All satellites reachable."
+    else
+        echo "[INFO] Some satellites unreachable. Rebooting loop in 10s..."
+        sleep 10
+        continue
+    fi
+
+    # Start satellites
+    for sat in "${SATELLITES[@]}"; do
+        start_satellite "$sat"
+    done
+
+    sleep 2
+
+    # Start main server
+    echo "=============================="
+    echo "[STARTUP] Launching main server..."
+    echo "=============================="
+    cd ~/Documents/messe-ui/backend
+    source .venv/bin/activate
+    python3 server.py &
+    SERVER_PID=$!
+
+    # Wait for server, restart on exit
+    wait $SERVER_PID
+    echo "[INFO] Server exited unexpectedly, restarting entire process..."
+done
