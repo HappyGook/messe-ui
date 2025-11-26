@@ -1,7 +1,7 @@
 import time
 import threading
 import requests
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from nfc_reader import (read_nfc, nfc_state)
 from led_controller import (LEDController)
 from sat_config import SATELLITE_ID, CORRECT_ID
@@ -152,6 +152,20 @@ async def reset_satellite():
     led.turn_off()
     print(f"[{SATELLITE_ID}] Satellite reset completed - NFC state cleared")
     return {"message": f"{SATELLITE_ID} reset successful"}
+
+@app.post("/api/idle-start")
+async def idle_start(req: Request):
+    data = await req.json()
+    start_ts = data.get("timestamp", time.time())  # fallback to local time if missing
+    print(f"[IDLE] Starting idle mode at hub timestamp {start_ts}")
+    led.start_idle_mode(start_ts)
+    return {"status": "idle_started", "timestamp": start_ts}
+
+@app.post("/api/idle-stop")
+async def idle_stop():
+    print(f"[IDLE] {SATELLITE_ID} is stopping the idle mode")
+    led.stop_idle_mode()
+    return {"status": "idle_stopped"}
 
 # =====================
 # Startup threads

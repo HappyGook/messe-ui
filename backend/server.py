@@ -335,13 +335,30 @@ async def set_statuses():
 @app.post("/api/idle-start")
 async def idle_start():
     print("[IDLE] Server is starting the idle mode")
-    led.start_idle_mode(time.time())
+    ts=time.time()
+    led.start_idle_mode(ts)
+    for sat in ["stl1", "stl2", "stl3", "stl4"]:
+        url = f"http://{sat}.local:8080/api/idle-start"
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                await client.post(url, json={"timestamp": ts})
+                print(f"[HUB] Idle mode started on {sat} with timestamp {ts}")
+        except Exception as e:
+            print(f"[HUB] Failed to start idle on {sat}: {e}")
     return {"status": "idle_started"}
 
 @app.post("/api/idle-stop")
 async def idle_stop():
     print("[IDLE] Server is stopping the idle mode")
     led.stop_idle_mode()
+    for sat in ["stl1", "stl2", "stl3", "stl4"]:
+        url = f"http://{sat}.local:8080/api/idle-stop"
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                await client.post(url)
+                print(f"[HUB] Idle mode stopped on {sat}")
+        except Exception as e:
+            print(f"[HUB] Failed to stop idle on {sat}: {e}")
     return {"status": "idle_stopped"}
 
 @app.get("/api/statuses")
