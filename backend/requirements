@@ -1,6 +1,7 @@
-fastapi==0.109.2
-uvicorn==0.27.1
-sqlite3==3.35.0
-python-multipart==0.0.6
-gpiozero==2.0.1
-joyit-mfrc522==0.1.0
+fastapi
+uvicorn[standard]
+httpx
+requests
+gpiozero
+RPi.GPIO
+joyit-mfrc522

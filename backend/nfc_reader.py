@@ -1,8 +1,4 @@
-#!/usr/bin/env python
-# import libraries
 import logging
-
-import gpiozero
 from joyit_mfrc522 import SimpleMFRC522
 import time
 import threading
