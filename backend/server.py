@@ -2,6 +2,7 @@ import asyncio
 import os
 import threading
 import time
+from asyncio import AbstractEventLoop
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +17,7 @@ import RPi.GPIO as GPIO
 app = FastAPI()
 led = LEDController()
 led_lock = threading.Lock()
+main_loop: Optional[AbstractEventLoop] = None
 
 # Configure CORS
 app.add_middleware(
@@ -140,11 +142,11 @@ def local_nfc_processor():
                     if not all_statuses_initialized:
                         all_statuses_initialized = True
 
-                    try:
-                        loop = asyncio.get_event_loop()
-                        asyncio.run_coroutine_threadsafe(evaluate_and_trigger(), loop)
-                    except Exception as e:
-                        print(f"[NFC] Error running evaluate_and_trigger: {e}")
+                    global main_loop
+                    if main_loop is not None:
+                        asyncio.run_coroutine_threadsafe(evaluate_and_trigger(), main_loop)
+                    else:
+                        print("[NFC] main_loop not yet initialized")
         else:
             if statuses["local"] is not None:
                 statuses["local"] = None
@@ -312,6 +314,8 @@ async def buzzer_polling():
 # start-up event starts NFC reading
 @app.on_event("startup")
 async def startup_event():
+    global main_loop
+    main_loop = asyncio.get_running_loop()
     setup_buzzer()
     threading.Thread(target=read_nfc, daemon=True).start()
     threading.Thread(target=local_nfc_processor, daemon=True).start()

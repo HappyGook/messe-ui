@@ -78,47 +78,46 @@ class LEDController:
         self.turn_off()
 
     def _idle_loop(self, start_ts):
+        # Idle mode constants
         SWING = 30
-        OFF1 = 2.5
+        OFF1 = 5
         RUNNER = 60
-        OFF2 = 2.5
+        OFF2 = 5
 
-        CYCLE = SWING + OFF1 + RUNNER + OFF2   # = 95 seconds
-        sat_num = int(SATELLITE_ID[-1])
-        SWING_END = SWING
-        OFF1_END = SWING + OFF1
-        RUNNER_END = OFF1_END + RUNNER
+        CYCLE = SWING + OFF1 + RUNNER + OFF2   # = 100 seconds
 
         while self.idle_active:
             now = time.time()
             t = (now - start_ts) % CYCLE
 
-            # 1 — SWING
-            if t < SWING_END:
-                level = 0.5 + 0.5 * math.sin(now * 4.0)
+            # 1: SWING (0–30)
+            if t < SWING:
+                level = (1 + math.sin(now * 4)) / 2  # smooth breathing
                 self.set_color((0, 0, level))
 
-            # 2 — OFF1
-            elif t < OFF1_END:
+            # 2: OFF (30–35)
+            elif t < SWING + OFF1:
                 self.turn_off()
 
-            # 3 — RUNNER
-            elif t < RUNNER_END:
-                phase = int((t - SWING_END) * 0.1) % 10
+            # 3: RUNNER (35–95)
+            elif t < SWING + OFF1 + RUNNER:
+                phase = int((t - (SWING + OFF1)) % 10)  # 0–9
 
-                active_index = phase if phase < 5 else (9 - phase)
+                if phase < 5:
+                    active_index = phase
+                else:
+                    active_index = 9 - phase
 
-                if active_index == sat_num:
+                if active_index == int(SATELLITE_ID[-1]):
                     self.set_color((0, 0, 1))  # BLUE
                 else:
                     self.turn_off()
 
-            # 4 — OFF2
+            # 4: OFF (95–100)
             else:
                 self.turn_off()
 
-            # 40 FPS
-            time.sleep(0.025)
+            time.sleep(0.05)  # 20 FPS
 
 
 # ----------------------
