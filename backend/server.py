@@ -125,44 +125,17 @@ def local_nfc_processor():
                 statuses["local"] = None
                 with led_lock:
                     led.turn_off()
-            last_processed_id = None  # Reset on game inactive
+            last_processed_id = None
             time.sleep(0.1)
             continue
 
-        if current_id and current_id != last_processed_id:
-            status = check_nfc_id(current_id)
-            statuses["local"] = status
-            print(f"[HUB] Local reader -> {status}")
+        if current_id:
+            if current_id != last_processed_id:
+                status = check_nfc_id(current_id)
+                statuses["local"] = status
+                print(f"[HUB] Local reader -> {status}")
+                last_processed_id = current_id
 
-            last_processed_id = current_id
-
-            if status == "correct":
-                other_statuses = {k: v for k, v in statuses.items() if k != "local"}
-                was_last_correct = all(v == "correct" for v in other_statuses.values())
-
-                if was_last_correct:
-                    print("[HUB] Local was the LAST correct! Triggering once and stopping loop updates.")
-
-                    try:
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                        loop.run_until_complete(evaluate_and_trigger())
-                        loop.close()
-                    except Exception as e:
-                        print(f"[NFC] Error running evaluate_and_trigger: {e}")
-                else:
-                    if all(value is not None for value in statuses.values()):
-                        if not all_statuses_initialized:
-                            all_statuses_initialized = True
-
-                        try:
-                            loop = asyncio.new_event_loop()
-                            asyncio.set_event_loop(loop)
-                            loop.run_until_complete(evaluate_and_trigger())
-                            loop.close()
-                        except Exception as e:
-                            print(f"[NFC] Error running evaluate_and_trigger: {e}")
-            else:
                 if all(value is not None for value in statuses.values()):
                     if not all_statuses_initialized:
                         all_statuses_initialized = True
@@ -174,11 +147,10 @@ def local_nfc_processor():
                         loop.close()
                     except Exception as e:
                         print(f"[NFC] Error running evaluate_and_trigger: {e}")
-
-        elif not current_id:
+        else:
             if statuses["local"] is not None:
                 statuses["local"] = None
-                last_processed_id = None  # Allow this card to be processed again if placed back
+            last_processed_id = None
 
         time.sleep(0.1)
 
