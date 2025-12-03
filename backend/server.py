@@ -141,10 +141,8 @@ def local_nfc_processor():
                         all_statuses_initialized = True
 
                     try:
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                        loop.run_until_complete(evaluate_and_trigger())
-                        loop.close()
+                        loop = asyncio.get_event_loop()
+                        asyncio.run_coroutine_threadsafe(evaluate_and_trigger(), loop)
                     except Exception as e:
                         print(f"[NFC] Error running evaluate_and_trigger: {e}")
         else:
@@ -200,36 +198,22 @@ async def evaluate_and_trigger():
 
             global game_active
             game_active = False
-
-            with led_lock:
-                led.turn_off()
-            print("[GAME] Local LED turned off")
-
-            async def turn_off_satellite(i: int):
-                url = f"http://stl{i}.local:8080/led/off"
-                try:
-                    async with httpx.AsyncClient(timeout=3.0) as client:
-                        response = await client.get(url)
-                        if response.status_code == 200:
-                            print(f"[HUB] Turned off LED on stl{i}")
-                        else:
-                            print(f"[HUB] stl{i} responded with {response.status_code}")
-                except Exception as e:
-                    print(f"[HUB] Failed to turn off stl{i}: {e}")
-
-            await asyncio.gather(*(turn_off_satellite(i) for i in range(1, 5)))
-
             await asyncio.gather(*(lock_satellite(i) for i in range(1, 5)))
             print("[GAME] All correct — game locked and waiting for next start")
 
+            # Clear everything after game ends
             for key in statuses:
                 statuses[key] = None
 
+            # Notify satellites to reset everything
             await asyncio.gather(*(notify_satellite_reset(i) for i in range(1, 5)))
 
             # Reset global flag
             global all_statuses_initialized
             all_statuses_initialized = False
+
+            with led_lock:
+                led.turn_off()
 
             print("[HUB] Game state fully reset, ready for next round")
 
@@ -415,11 +399,11 @@ async def get_leaderboard():
                             SELECT id, name, time, created_at
                             FROM users
                             ORDER BY (
-                                         CAST(substr(time, 1, 2) AS INTEGER) * 3600000 +   -- hours to milliseconds
-                                         CAST(substr(time, 4, 2) AS INTEGER) * 60000 +     -- minutes to milliseconds  
-                                         CAST(substr(time, 7, 2) AS INTEGER) * 1000 +      -- seconds to milliseconds
-                                         CAST(substr(time, 10, 3) AS INTEGER)              -- milliseconds
-                                         ) ASC
+                                CAST(substr(time, 1, 2) AS INTEGER) * 3600000 +   -- hours to milliseconds
+                                CAST(substr(time, 4, 2) AS INTEGER) * 60000 +     -- minutes to milliseconds  
+                                CAST(substr(time, 7, 2) AS INTEGER) * 1000 +      -- seconds to milliseconds
+                                CAST(substr(time, 10, 3) AS INTEGER)              -- milliseconds
+                                ) ASC
                             """).fetchall()
         return [dict(row) for row in rows]
 
@@ -430,11 +414,11 @@ async def get_all_leaders():
                             SELECT id, name, time, created_at
                             FROM all_scores
                             ORDER BY (
-                                         CAST(substr(time, 1, 2) AS INTEGER) * 3600000 +   -- hours to milliseconds
-                                         CAST(substr(time, 4, 2) AS INTEGER) * 60000 +     -- minutes to milliseconds  
-                                         CAST(substr(time, 7, 2) AS INTEGER) * 1000 +      -- seconds to milliseconds
-                                         CAST(substr(time, 10, 3) AS INTEGER)              -- milliseconds
-                                         ) ASC
+                                CAST(substr(time, 1, 2) AS INTEGER) * 3600000 +   -- hours to milliseconds
+                                CAST(substr(time, 4, 2) AS INTEGER) * 60000 +     -- minutes to milliseconds  
+                                CAST(substr(time, 7, 2) AS INTEGER) * 1000 +      -- seconds to milliseconds
+                                CAST(substr(time, 10, 3) AS INTEGER)              -- milliseconds
+                                ) ASC
                             """).fetchall()
         return [dict(row) for row in rows]
 
