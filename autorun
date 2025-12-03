@@ -48,6 +48,7 @@ ssh_retry() {
 start_satellite() {
     local host=$1
     echo "[START] Launching satellite on $host..."
+    sshpass -p "$PASSWORD" ssh oleg77@"$host" "pkill -f python3"
     sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no oleg77@"$host" "bash -lc '
         cd $REMOTE_PATH
         source .venv/bin/activate
