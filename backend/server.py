@@ -16,7 +16,6 @@ import RPi.GPIO as GPIO
 app = FastAPI()
 led = LEDController()
 led_lock = threading.Lock()
-main_loop = None
 
 # Configure CORS
 app.add_middleware(
@@ -116,30 +115,35 @@ def local_nfc_processor():
     global all_statuses_initialized
 
     while True:
-        if not game_active:
-            time.sleep(0.1)
-            continue
-
         current_read = nfc_state.get_reading()
         current_id = current_read.get("id")
+
+        if not game_active:
+            # Clear local status when game is not active
+            if statuses["local"] is not None:
+                statuses["local"] = None
+                with led_lock:
+                    led.turn_off()
+            time.sleep(0.1)
+            continue
 
         if current_id:
             status = check_nfc_id(current_id)
             statuses["local"] = status
             print(f"[HUB] Local reader -> {status}")
 
-            # Always trigger evaluation when we have a status update
             if all(value is not None for value in statuses.values()):
                 if not all_statuses_initialized:
                     all_statuses_initialized = True
 
-                # Create a new event loop for this thread to run async code
                 try:
-                    asyncio.run_coroutine_threadsafe(evaluate_and_trigger(), main_loop)
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(evaluate_and_trigger())
+                    loop.close()
                 except Exception as e:
                     print(f"[NFC] Error running evaluate_and_trigger: {e}")
         else:
-            # Clear local status when no card is present
             statuses["local"] = None
 
         time.sleep(0.1)
@@ -305,8 +309,6 @@ async def buzzer_polling():
 @app.on_event("startup")
 async def startup_event():
     setup_buzzer()
-    global main_loop
-    main_loop = asyncio.get_running_loop()
     threading.Thread(target=read_nfc, daemon=True).start()
     threading.Thread(target=local_nfc_processor, daemon=True).start()
 
