@@ -113,6 +113,7 @@ async def receive_remote(remote: RemoteNFC):
 
 def local_nfc_processor():
     global all_statuses_initialized
+    last_processed_id = None
 
     while True:
         current_read = nfc_state.get_reading()
@@ -124,27 +125,60 @@ def local_nfc_processor():
                 statuses["local"] = None
                 with led_lock:
                     led.turn_off()
+            last_processed_id = None  # Reset on game inactive
             time.sleep(0.1)
             continue
 
-        if current_id:
+        if current_id and current_id != last_processed_id:
             status = check_nfc_id(current_id)
             statuses["local"] = status
             print(f"[HUB] Local reader -> {status}")
 
-            if all(value is not None for value in statuses.values()):
-                if not all_statuses_initialized:
-                    all_statuses_initialized = True
+            last_processed_id = current_id
 
-                try:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    loop.run_until_complete(evaluate_and_trigger())
-                    loop.close()
-                except Exception as e:
-                    print(f"[NFC] Error running evaluate_and_trigger: {e}")
-        else:
-            statuses["local"] = None
+            if status == "correct":
+                other_statuses = {k: v for k, v in statuses.items() if k != "local"}
+                was_last_correct = all(v == "correct" for v in other_statuses.values())
+
+                if was_last_correct:
+                    print("[HUB] Local was the LAST correct! Triggering once and stopping loop updates.")
+
+                    try:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        loop.run_until_complete(evaluate_and_trigger())
+                        loop.close()
+                    except Exception as e:
+                        print(f"[NFC] Error running evaluate_and_trigger: {e}")
+                else:
+                    if all(value is not None for value in statuses.values()):
+                        if not all_statuses_initialized:
+                            all_statuses_initialized = True
+
+                        try:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                            loop.run_until_complete(evaluate_and_trigger())
+                            loop.close()
+                        except Exception as e:
+                            print(f"[NFC] Error running evaluate_and_trigger: {e}")
+            else:
+                if all(value is not None for value in statuses.values()):
+                    if not all_statuses_initialized:
+                        all_statuses_initialized = True
+
+                    try:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        loop.run_until_complete(evaluate_and_trigger())
+                        loop.close()
+                    except Exception as e:
+                        print(f"[NFC] Error running evaluate_and_trigger: {e}")
+
+        elif not current_id:
+            if statuses["local"] is not None:
+                statuses["local"] = None
+                last_processed_id = None  # Allow this card to be processed again if placed back
 
         time.sleep(0.1)
 
